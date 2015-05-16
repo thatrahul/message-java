@@ -1,0 +1,4 @@
+*.bat -crlf
+tools/mmx-standalone-dist/src/main/resources/LICENSE.txt -crlf
+tools/mmx-standalone-dist/src/main/resources/LICENSE-3RD-PARTY.txt -crlf
+tools/mmx-standalone-dist-win/src/main/resources/README.txt -crlf

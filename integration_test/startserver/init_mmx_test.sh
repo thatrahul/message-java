@@ -1,0 +1,190 @@
+#!/bin/bash
+#   Copyright (c) 2015 Magnet Systems, Inc.
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+
+
+curdir=`pwd`
+
+seeddata_sql="$curdir/../test-conf/seed_testdata.sql"
+cleanup_sql="$curdir/../test-conf/clean_testdata.sql"
+
+sandbox_dir="$curdir/mmx-server-1.0.1"
+bin_dir="$sandbox_dir/bin"
+conf_dir="$sandbox_dir/conf"
+
+local_build_dir="$curdir/../../tools/mmx-server-zip/target"
+
+if [ -z "$MMX_MYSQL_USR" ] ; then
+    MMX_MYSQL_USR=root
+    MMX_MYSQL_PWD=
+fi
+
+if [ -z "$MMX_DB" ] ; then
+    MMX_DB=mmxintegtest
+fi
+
+mysql_command="mysql -u $MMX_MYSQL_USR"
+if [ -n "$MMX_MYSQL_PWD" ] ; then
+    mysql_command="$mysql_command -p $MMX_MYSQL_PWD"
+fi
+
+# sleep and prompt the wait time
+sleepAndEcho() {
+  timeout=$1
+  while [ "$timeout" -gt 0 ]; do
+    printf "wait ${timeout}s  \r"
+    sleep 5
+    timeout=`expr $timeout - 5`
+  done
+}
+
+# remove existing test binaries
+
+cleanup() {
+    if [ -e $sandbox_dir/bin/mmx.pid ]; then
+        echo "Attemp to stop existing MMX server..."
+        stop
+        sleep 5
+    fi
+    echo "Deleting unzipped mmx-server bits..."
+    delete_command="rm -rf $sandbox_dir *.zip"
+    eval "$delete_command"
+}
+
+download_from_jenkins() {
+    cleanup
+    echo "Downloading MMX server from Jenkins"
+    download_command="curl -u helen.bragg:Aardvark1 -o mmx-server.zip http://build.magnet.com:8082/view/MMX/view/MMX%20Develop/job/mmx-develop-all-maven/lastSuccessfulBuild/artifact/tools/mmx-server-zip/target/mmx-server-1.0.1.zip"
+
+    eval "$download_command"
+    echo "Unzipping downloaded file..."
+    eval "unzip mmx-server-1.0.1.zip"
+}
+
+copy_local() {
+    cleanup
+    echo "Copying MMX server zip from local build, "
+    copy_command="cp $local_build_dir/mmx-server-1.0.1.zip ."
+    eval "$copy_command"
+    echo "Unzipping copied file..."
+    eval "unzip mmx-server-1.0.1.zip"
+}
+
+
+start_local() {
+    copy_local
+    start
+}
+
+start_jenkins() {
+   download_from_jenkins
+   start
+
+}
+
+start() {
+    # copy test configuration
+    echo "Copying test startup.properties"
+    copy_command="cp $curdir/../test-conf/startup.properties $conf_dir"
+    echo "$copy_command"
+    eval "$copy_command"
+
+    # cleanup existing data
+    cleanup_db_command="$mysql_command < $cleanup_sql"
+    echo "Deleting existing test data..."
+    echo "$cleanup_db_command"
+    eval "$cleanup_db_command"
+
+    # stop server
+    stop
+    sleep 5
+
+    # start MMX
+    pushd $bin_dir
+    echo `pwd`
+    start_command="./mmx-server.sh start"
+    echo "Starting MMX..."
+    echo "$start_command"
+    eval "$start_command"
+
+    # sleep a bit to wait for it to finish initializing; default is 60
+    WAITTIME=${WAITTIME:-60}
+    sleepAndEcho ${WAITTIME}
+
+    # seed test data
+    echo "Seeding test data..."
+    seed_data="$mysql_command $MMX_DB < $seeddata_sql"
+    echo "$seed_data"
+    eval "$seed_data"
+    if eval "$@"; then
+    # restart the server to pick up new test data from db into server memory cache, such case pubsub nodes
+        eval "./mmx-server.sh restart"
+        echo "MMX server started successfully"
+    fi
+    popd
+    # sleep some more to wait for server to finish initializing
+    sleepAndEcho ${WAITTIME}
+}
+
+stop() {
+    pushd $bin_dir
+    stop_command="./mmx-server.sh stop"
+    echo "Stopping MMX..."
+    eval "$stop_command"
+    popd
+}
+
+usage() {
+    echo "Usage: $0 {start|stop|restart} {local|jenkins}" 1>&2
+    echo "Example: $0 start local"
+    echo "Example: $0 stop"
+}
+
+case "$1" in
+        start)
+            if [ $# -le 1 ]; then
+            usage
+            exit 1
+            fi
+            ;;
+        stop)
+            stop
+            exit 0
+            ;;
+        restart)
+            stop
+            start
+            exit 0
+            ;;
+        **)
+            usage
+            exit 1
+            ;;
+esac
+
+case "$2" in
+        local)
+            start_local
+            exit 0
+            ;;
+        jenkins)
+            start_jenkins
+            exit 0
+            ;;
+        **)
+          usage
+          exit 1
+          ;;
+esac
