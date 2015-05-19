@@ -156,14 +156,9 @@
     </dependency>
     <!-- For GCM notifications -->
     <dependency>
-      <groupId>com.google</groupId>
+      <groupId>com.ganyo</groupId>
       <artifactId>gcm-server</artifactId>
-      <version>2012-06-28</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google</groupId>
-      <artifactId>json_simple</artifactId>
-      <version>2012-06-28-1.1</version>
+      <version>1.0.2</version>
     </dependency>
     <!-- APNs notification support -->
     <dependency>

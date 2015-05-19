@@ -18,7 +18,6 @@
 
 <modules>
   <module>common</module>
-  <module>android</module>
   <module>j2se</module>
 </modules>
 
