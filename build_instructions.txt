@@ -8,10 +8,10 @@ Build environment:
 - MySQL 5.6 (for unit tests)
 
 
-Download and build the source from the following repos:
+Download and build source from one or more of the following repos. 
 
-1. This is a dependency to “message-java”:
-https://github.com/magnetsystems/magnet-openfire
+1.https://github.com/magnetsystems/magnet-openfire
+Note: You can skip this step if you're not modifying any code here. The release version is hosted.
 
 % make
 % ./mvn_install_local.sh
