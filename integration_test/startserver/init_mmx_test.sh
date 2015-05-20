@@ -63,16 +63,6 @@ cleanup() {
     eval "$delete_command"
 }
 
-download_from_jenkins() {
-    cleanup
-    echo "Downloading MMX server from Jenkins"
-    download_command="curl -u helen.bragg:Aardvark1 -o mmx-server.zip http://build.magnet.com:8082/view/MMX/view/MMX%20Develop/job/mmx-develop-all-maven/lastSuccessfulBuild/artifact/tools/mmx-server-zip/target/mmx-server-1.0.1.zip"
-
-    eval "$download_command"
-    echo "Unzipping downloaded file..."
-    eval "unzip mmx-server-1.0.1.zip"
-}
-
 copy_local() {
     cleanup
     echo "Copying MMX server zip from local build, "
@@ -86,12 +76,6 @@ copy_local() {
 start_local() {
     copy_local
     start
-}
-
-start_jenkins() {
-   download_from_jenkins
-   start
-
 }
 
 start() {
@@ -147,7 +131,7 @@ stop() {
 }
 
 usage() {
-    echo "Usage: $0 {start|stop|restart} {local|jenkins}" 1>&2
+    echo "Usage: $0 {start|stop|restart} {local}" 1>&2
     echo "Example: $0 start local"
     echo "Example: $0 stop"
 }
@@ -177,10 +161,6 @@ esac
 case "$2" in
         local)
             start_local
-            exit 0
-            ;;
-        jenkins)
-            start_jenkins
             exit 0
             ;;
         **)
