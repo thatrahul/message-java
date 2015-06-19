@@ -39,6 +39,12 @@ import org.xmpp.packet.Packet;
 public class MMXPacketInterceptor implements PacketInterceptor {
   private static Logger LOGGER = LoggerFactory.getLogger(MMXPacketInterceptor.class);
   private final String ID = RandomStringUtils.randomAlphanumeric(10);
+  private MMXMessageHandlingRule messageHandlingRule;
+
+  public MMXPacketInterceptor(MMXMessageHandlingRule messageHandlingRule){
+    this.messageHandlingRule = messageHandlingRule;
+  }
+
   @Override
   public void interceptPacket(Packet packet, Session session, boolean incoming, boolean processed) throws
       PacketRejectedException {
@@ -64,6 +70,6 @@ public class MMXPacketInterceptor implements PacketInterceptor {
 
     Message mmxMessage = (Message) packet;
 
-    MMXMessageHandlingRule.handle(new MMXMsgRuleInput(mmxMessage, session, incoming, processed, MMXMessageUtil.isConfirmationMessage(mmxMessage), (mmxMessage.getTo().getResource() == null)));
+    messageHandlingRule.handle(new MMXMsgRuleInput(mmxMessage, session, incoming, processed, MMXMessageUtil.isConfirmationMessage(mmxMessage), (mmxMessage.getTo().getResource() == null)));
   }
 }

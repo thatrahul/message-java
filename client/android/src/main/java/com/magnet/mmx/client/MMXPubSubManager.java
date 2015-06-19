@@ -223,6 +223,21 @@ public final class MMXPubSubManager extends MMXManager {
   }
 
   /**
+   * Get the items by the published item identifiers.
+   * @param topic a topic object
+   * @param itemIds A list of published item identifiers.
+   * @return A Map of item identifiers and published items.
+   * @throws TopicNotFoundException
+   * @throws TopicPermissionException
+   * @throws MMXException
+   */
+  public Map<String, MMXMessage> getItemsByIds(MMXTopic topic, List<String> itemIds)
+      throws TopicNotFoundException, TopicPermissionException, MMXException {
+    checkDestroyed();
+    return mPubSubManager.getItemsByIds(topic, itemIds);
+  }
+  
+  /**
    * @hide
    * Publish an item with a publish ID.  This is for internal use.
    *
@@ -247,6 +262,9 @@ public final class MMXPubSubManager extends MMXManager {
    * with {@link com.magnet.mmx.protocol.TopicAction.PublisherType#anyone} or 
    * {@link com.magnet.mmx.protocol.TopicAction.PublisherType#subscribers} for
    * non-owner; otherwise, TopicPermissionException will be thrown.
+   *
+   * If the MMXClient is not connected, the publishing of this payload will
+   * be queued and published upon the next successful connection.
    *
    * @param topic a topic object
    * @param payload a non-null application specific payload
@@ -410,7 +428,9 @@ public final class MMXPubSubManager extends MMXManager {
 
   /**
    * Returns all pending publishing messages.  The pending publishing messages
-   * can be cancelled.
+   * can be cancelled.  Published items are "pending" when publish is called while the
+   * MMXClient is disconnected.  These items will be published upon the next successful
+   * connection.
    *
    * @return a map with message id as the key and MMXTopic as the value
    * @see #cancelMessage(String)

@@ -20,7 +20,7 @@ curdir=`pwd`
 seeddata_sql="$curdir/../test-conf/seed_testdata.sql"
 cleanup_sql="$curdir/../test-conf/clean_testdata.sql"
 
-sandbox_dir="$curdir/mmx-server-1.0.1"
+sandbox_dir="$curdir/mmx-server-1.0.2"
 bin_dir="$sandbox_dir/bin"
 conf_dir="$sandbox_dir/conf"
 
@@ -66,10 +66,10 @@ cleanup() {
 copy_local() {
     cleanup
     echo "Copying MMX server zip from local build, "
-    copy_command="cp $local_build_dir/mmx-server-1.0.1.zip ."
+    copy_command="cp $local_build_dir/mmx-server-1.0.2.zip ."
     eval "$copy_command"
     echo "Unzipping copied file..."
-    eval "unzip mmx-server-1.0.1.zip"
+    eval "unzip mmx-server-1.0.2.zip"
 }
 
 

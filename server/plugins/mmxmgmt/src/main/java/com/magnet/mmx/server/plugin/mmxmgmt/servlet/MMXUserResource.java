@@ -88,8 +88,14 @@ public class MMXUserResource extends AbstractAdminResource {
       }
       UserManagerService.createUser(userCreationInfo);
     } catch (UserAlreadyExistsException e) {
-      LOGGER.error("createUser : exception caught userCreationInfo={}", userCreationInfo, e);
-      throw new WebApplicationException(e, Response.Status.CONFLICT);
+      LOGGER.info("createUser : exception caught userCreationInfo={}", userCreationInfo, e);
+      String message = String.format(ErrorMessages.ERROR_USERNAME_EXISTS, userCreationInfo.getUsername());
+      throw new WebApplicationException(
+          Response
+              .status(Response.Status.CONFLICT)
+              .entity(new ErrorResponse(ErrorCode.INVALID_USER_NAME, message))
+              .build()
+      );
     } catch (ServerNotInitializedException e) {
       LOGGER.error("createUser : exception caught userCreationInfo={}", userCreationInfo, e);
       throw new WebApplicationException(e, Response.Status.INTERNAL_SERVER_ERROR);

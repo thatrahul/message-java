@@ -39,7 +39,6 @@ import java.util.List;
  */
 
 @Path("/devices/{"+MMXServerConstants.DEVICEID_PATH_PARAM+"}/tags")
-
 public class MMXDeviceTagsResource extends AbstractBaseResource {
   private static final Logger LOGGER = LoggerFactory.getLogger(MMXDeviceTagsResource.class);
 

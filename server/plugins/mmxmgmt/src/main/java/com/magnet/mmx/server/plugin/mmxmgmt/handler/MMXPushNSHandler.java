@@ -17,8 +17,6 @@ package com.magnet.mmx.server.plugin.mmxmgmt.handler;
 import com.magnet.mmx.protocol.Constants;
 import com.magnet.mmx.protocol.MMXStatus;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.PushMessageEntity;
-import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXPushMessageRateExceededEvent;
-import com.magnet.mmx.server.plugin.mmxmgmt.monitoring.RateLimiterService;
 import com.magnet.mmx.server.plugin.mmxmgmt.push.*;
 import com.magnet.mmx.server.plugin.mmxmgmt.util.*;
 import org.dom4j.Element;
@@ -55,13 +53,6 @@ public class MMXPushNSHandler extends IQHandler {
 
     if(validationResult instanceof MMXPushValidationFailure)
       return getRespIQ(iq, validationResult.getCode());
-
-    if(!RateLimiterService.getPushPermit()) {
-      AlertEventsManager.post(new MMXPushMessageRateExceededEvent(appId, AlertsUtil.getMaxPushRate()));
-      PushStatusCode code = PushStatusCode.EXCEEDED_PUSH_MESSAGE_RATE;
-      code.setMessage("Exceeded push message rate : " + MMXConfiguration.getConfiguration().getLong(MMXConfigKeys.MAX_PUSH_MESSAGE_RATE, -1));
-      return getRespIQ(iq, code);
-    }
 
     String pushMessageId = PushUtil.generateId(appId, deviceId);
     MMXPayload mmxPayload = new MMXPushPayload(command, element.getText());

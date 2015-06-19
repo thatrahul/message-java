@@ -18,7 +18,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.magnet.mmx.protocol.Constants;
-import com.magnet.mmx.server.api.v1.MMXHeaderAuth;
 import com.magnet.mmx.server.api.v1.RestUtils;
 import com.magnet.mmx.server.common.data.AppEntity;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.AbstractBaseResource;
@@ -48,7 +47,6 @@ import java.util.List;
 /**
  */
 @Path("/users")
-@MMXHeaderAuth
 public class MMXUsersResource extends AbstractBaseResource {
   public static final String USERNAME_PARAM = "username";
   public static final String EMAIL_PARAM = "email";

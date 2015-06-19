@@ -71,9 +71,10 @@ public class ConfigServlet extends AbstractSecureServlet {
 
     String postBody = PushServlet.getRequestBody(req);
 
-    if (postBody != null || !postBody.isEmpty()) {
+    if (postBody != null && !postBody.trim().isEmpty()) {
       LOGGER.trace("doPost : Received Configuration : {}", postBody);
       SerializableConfig config = GsonData.getGson().fromJson(postBody, SerializableConfig.class);
+
       MMXConfiguration configuration = MMXConfiguration.getConfiguration();
       Set<String> keys = config.configs.keySet();
       for (String key : keys) {
@@ -89,7 +90,6 @@ public class ConfigServlet extends AbstractSecureServlet {
     } else {
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
     }
-    return;
   }
 
   /**
@@ -102,6 +102,7 @@ public class ConfigServlet extends AbstractSecureServlet {
 
     public SerializableConfig(MMXConfiguration configuration) {
       Iterator<String> keys = configuration.getKeys();
+      LOGGER.trace("SerializableConfig : configuration={}", configuration);
       while (keys.hasNext()) {
         String key = keys.next();
         if(MMXConfigKeys.ALERT_EMAIL_BCC_LIST.equals(key)) {

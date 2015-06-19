@@ -1,7 +1,7 @@
 # $Revision$
 # $Date$
 
-INSERT INTO ofVersion (name, version) VALUES ('mmxappmgmt', 3);
+INSERT INTO ofVersion (name, version) VALUES ('mmxappmgmt', 4);
 
 CREATE TABLE mmxApp (
   id                INT           NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -120,6 +120,17 @@ create Table mmxTag (
   FOREIGN KEY (serviceID, nodeID) REFERENCES ofPubsubNode(serviceID, nodeID) ON DELETE CASCADE
 );
 
+/* Table for app specific configuration */
+CREATE TABLE mmxAppConfiguration (
+    id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    appId       VARCHAR(16)     NOT NULL,
+    configKey   VARCHAR(100)    NOT NULL,
+    configValue VARCHAR(300)    NOT NULL,
+    FOREIGN KEY (appId) REFERENCES mmxApp(appId) ON DELETE CASCADE
+);
+
+ALTER TABLE mmxAppConfiguration ADD UNIQUE KEY `mmxAppConfiguration_uk` (appId, configKey);
+
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.admin.api.https.port', '6061') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.cluster.max.apps', '-1') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.rest.https.port', '5221') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
@@ -129,7 +140,6 @@ INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.alert.email.subject', 'Usa
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.alert.email.port', '') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.retry.count', '0') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.alert.email.user', '') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
-INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.instance.max.inapp.message.rate.per.sec', '-1') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.domain.name', '') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.cluster.max.devices.per.app', '-1') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.alert.email.enabled', 'false') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
@@ -141,7 +151,6 @@ INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.retry.interval.minutes', '
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.admin.api.port', '6060') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.alert.email.password', '') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.retry.mechanism', 'Standard') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
-INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.instance.max.push.message.rate.per.sec', '-1') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.alert.email.host', '') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.timeout.period.minutes', '180') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.wakeup.frequency', '30') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
@@ -150,5 +159,5 @@ INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.push.callback.protocol', '
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.push.callback.port', '5220') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.apns.feedback.initialwait.min', '10') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
 INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.apns.feedback.frequency.min', '360') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
-INSERT INTO ofProperty (name, propValue) VALUES( 'xmpp.pubsub.flush.max', '-1') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
-
+INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.instance.max.xmpp.rate.per.sec', '-1') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);
+INSERT INTO ofProperty (name, propValue) VALUES( 'mmx.instance.max.http.rate.per.sec', '-1') ON DUPLICATE KEY UPDATE name=VALUES(name), propValue=VALUES(propValue);

@@ -18,6 +18,7 @@ import android.os.Handler;
 
 import com.magnet.mmx.client.common.DeviceManager;
 import com.magnet.mmx.client.common.MMXException;
+import com.magnet.mmx.client.common.MMXid;
 import com.magnet.mmx.protocol.DevList;
 import com.magnet.mmx.protocol.DevReg;
 import com.magnet.mmx.protocol.DevTags;
@@ -126,5 +127,15 @@ public class MMXDeviceManager extends MMXManager {
   @Override
   void onConnectionChanged() {
     mDeviceManager = DeviceManager.getInstance(getMMXClient().getMMXConnection());
+  }
+
+  /**
+   * Retrieves a list of devices for the specified user.
+   * @param id the id of the user
+   * @return a list of devices for the specified user
+   */
+  public DevList getDevices(MMXid id) throws MMXException {
+    checkDestroyed();
+    return mDeviceManager.getDevices(id.getUserId());
   }
 }

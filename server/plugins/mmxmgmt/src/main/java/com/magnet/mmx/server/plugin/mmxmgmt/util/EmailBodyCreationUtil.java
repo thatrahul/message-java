@@ -31,11 +31,11 @@ public class EmailBodyCreationUtil {
   }
 
   private static String getBodyFromEvent(MMXEvent event) {
-    if(event instanceof  MMXInAppRateExceededEvent) {
-      return getString((MMXInAppRateExceededEvent) event);
+    if(event instanceof MMXXmppRateExceededEvent) {
+      return getString((MMXXmppRateExceededEvent) event);
 
-    } else if (event instanceof MMXPushMessageRateExceededEvent) {
-      return getString((MMXPushMessageRateExceededEvent) event);
+    } else if (event instanceof MMXHttpRateExceededEvent) {
+      return getString((MMXHttpRateExceededEvent) event);
 
     } else if (event instanceof MMXMaxAppLimitReachedEvent) {
       return getString((MMXMaxAppLimitReachedEvent) event);
@@ -47,12 +47,12 @@ public class EmailBodyCreationUtil {
     return "";
   }
 
-  private static String getString(MMXInAppRateExceededEvent event) {
-    return getAppPrefix(event) + String.format(MMXServerConstants.MAX_INAPP_RATE_BODY, event.getRate());
+  private static String getString(MMXXmppRateExceededEvent event) {
+    return getAppPrefix(event) + String.format(MMXServerConstants.MAX_XMPP_RATE_EXCEEDED_EMAIL_BODY, event.getRate());
   }
 
-  private static String getString(MMXPushMessageRateExceededEvent event) {
-    return getAppPrefix(event) + String.format(MMXServerConstants.MAX_PUSH_RATE_BODY, event.getRate());
+  private static String getString(MMXHttpRateExceededEvent event) {
+    return getAppPrefix(event) + String.format(MMXServerConstants.MAX_HTTP_RATE_EXCEEDED_EMAIL_BODY, event.getRate());
   }
 
   private static String getString(MMXMaxAppLimitReachedEvent event) {

@@ -24,15 +24,11 @@ import com.magnet.mmx.server.plugin.mmxmgmt.db.DeviceEntity;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.DeviceNotFoundException;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.MessageEntity;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.PushStatus;
-import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXInAppRateExceededEvent;
+import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXXmppRateExceededEvent;
 import com.magnet.mmx.server.plugin.mmxmgmt.message.ErrorMessageBuilder;
+import com.magnet.mmx.server.plugin.mmxmgmt.monitoring.RateLimiterDescriptor;
 import com.magnet.mmx.server.plugin.mmxmgmt.monitoring.RateLimiterService;
-import com.magnet.mmx.server.plugin.mmxmgmt.util.AlertEventsManager;
-import com.magnet.mmx.server.plugin.mmxmgmt.util.AlertsUtil;
-import com.magnet.mmx.server.plugin.mmxmgmt.util.DBUtil;
-import com.magnet.mmx.server.plugin.mmxmgmt.util.JIDUtil;
-import com.magnet.mmx.server.plugin.mmxmgmt.util.MMXOfflineStorageUtil;
-import com.magnet.mmx.server.plugin.mmxmgmt.util.WakeupUtil;
+import com.magnet.mmx.server.plugin.mmxmgmt.util.*;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.interceptor.PacketRejectedException;
 import org.slf4j.Logger;
@@ -46,7 +42,7 @@ import java.util.List;
 public class MMXMessageHandlingRule {
   private static final Logger LOGGER = LoggerFactory.getLogger(MMXMessageHandlingRule.class);
 
-  public static void handle(MMXMsgRuleInput input) throws PacketRejectedException {
+  public void handle(MMXMsgRuleInput input) throws PacketRejectedException {
     LOGGER.trace("handle : input={}", input);
     /*
      * If the message is processed do nothing.
@@ -70,7 +66,7 @@ public class MMXMessageHandlingRule {
       LOGGER.trace("handle : processing bareJID input={}", input);
       if(input.isIncoming() && !input.isReceipt()) {
         LOGGER.trace("handle : handling incoming non-receipt message with bareJID input={}", input);
-        MMXMessageHandlingRule.handleBareJID(input.getMessage());
+        handleBareJID(input.getMessage());
       }
       LOGGER.trace("handle : done processing bareJID, stop further processing input={}", input);
       throw new PacketRejectedException("Stopping processing for the message addressed to bareJID=" + input.getMessage().getTo());
@@ -116,14 +112,17 @@ public class MMXMessageHandlingRule {
     {
       LOGGER.trace("handle : handling unprocessed, incoming, non-receipt message with fullJID messageId={}", input.getMessage().getID());
 
-      if(!RateLimiterService.getInAppPermit()) {
-        String appId = JIDUtil.getAppId(input.getMessage().getTo());
-        AlertEventsManager.post(new MMXInAppRateExceededEvent(appId, AlertsUtil.getMaxInAppRate()));
+      String appId = JIDUtil.getAppId(input.getMessage().getTo());
+      int rate = MMXConfiguration.getConfiguration().getInt(MMXConfigKeys.MAX_XMPP_RATE, MMXServerConstants.DEFAULT_MAX_XMPP_RATE);
+      RateLimiterDescriptor descriptor = new RateLimiterDescriptor(MMXServerConstants.XMPP_RATE_TYPE, appId, rate);
+      LOGGER.trace("handle : checking rate limite for descriptor={}", descriptor);
+      if(!RateLimiterService.isAllowed(descriptor)) {
+        LOGGER.error("handle : Max xmpp message rate reached : {}, appId : {}", rate, appId);
+        AlertEventsManager.post(new MMXXmppRateExceededEvent(appId, AlertsUtil.getMaxXmppRate()));
         throw new PacketRejectedException("Max message rate has been reached");
       }
 
       String deviceId = input.getMessage().getTo().getResource();
-      String appId = JIDUtil.getAppId(input.getMessage().getFrom());
       DeviceEntity deviceEntity = null;
       if(!Strings.isNullOrEmpty(deviceId) && !Strings.isNullOrEmpty(appId)) {
         try {
@@ -185,7 +184,7 @@ public class MMXMessageHandlingRule {
     return messageEntity;
   }
 
-  private static void handleBareJID(Message message) {
+  private void handleBareJID(Message message) {
     if (message.getTo().getNode() == null) {
       LOGGER.trace("handleBareJID: ignoring a multicast message={}", message);
       // It is a multicast message (XEP-0033); let MulticastRouter handle it.
@@ -231,7 +230,7 @@ public class MMXMessageHandlingRule {
     }
   }
 
-  private static void sendDeviceNotFoundErrorMsg(Message mmxMessage) {
+  private void sendDeviceNotFoundErrorMsg(Message mmxMessage) {
     MMXError error = new MMXError(StatusCode.BAD_REQUEST)
             .setMessage(PacketError.Condition.item_not_found.toString())
             .setSeverity(MMXError.Severity.TRIVIAL);
@@ -242,7 +241,7 @@ public class MMXMessageHandlingRule {
     LOGGER.trace("sendDeviceNotFoundErrorMsg : errorMessage={}", errorMessage.getBody());
   }
 
-  private static boolean canBeWokenUp(DeviceEntity deviceEntity) {
+  private boolean canBeWokenUp(DeviceEntity deviceEntity) {
     return deviceEntity != null && deviceEntity.getClientToken() != null &&
         deviceEntity.getPushStatus() != PushStatus.INVALID;
   }

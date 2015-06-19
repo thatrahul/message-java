@@ -155,6 +155,9 @@ public class DeviceManager {
       if (tags == null) {
         tags = new ArrayList<String>(0);
       }
+      if (!tags.isEmpty()) {
+        validateTags(tags);
+      }
     } else {
       validateTags(tags);
     }
@@ -175,14 +178,13 @@ public class DeviceManager {
   }
 
   /**
-   * @hide
    * Get all registered devices belonging to a user.  If <code>userId</code>
    * is null, the current user will be assumed.
    * @param userId The user ID (without appID)
    * @return A list of device ID's or an empty list.
    * @throws MMXException
    */
-  DevList getDevices(String userId) throws MMXException {
+  public DevList getDevices(String userId) throws MMXException {
     DevRegIQHandler<String, DevList> iqHandler =
         new DevRegIQHandler<String, DevList>();
     iqHandler.sendGetIQ(mCon, Constants.DeviceCommand.QUERY.name(), userId,

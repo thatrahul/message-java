@@ -73,8 +73,6 @@ public class MMXConfigurationTest {
           new ImmutableTriple<String, String, String>("ClusterMaxDevicesPerApp", MMXConfigKeys.MAX_DEVICES_PER_APP, "long"),
           new ImmutableTriple<String, String, String>("ClusterMaxDevicesPerUser", MMXConfigKeys.MAX_DEVICES_PER_USER, "long"),
           new ImmutableTriple<String, String, String>("ClusterMaxAppsPerServer", MMXConfigKeys.MAX_APP_PER_OWNER, "long"),
-          new ImmutableTriple<String, String, String>("InstanceMaxInappMessageRate", MMXConfigKeys.MAX_INAPP_MESSAGE_RATE, "long"),
-          new ImmutableTriple<String, String, String>("InstanceMaxPushMessageRate", MMXConfigKeys.MAX_PUSH_MESSAGE_RATE, "long"),
           new ImmutableTriple<String, String, String>("MmxAlertEmailHost", MMXConfigKeys.ALERT_EMAIL_HOST, "java.lang.String"),
           new ImmutableTriple<String, String, String>("MmxAlertEmailPort", MMXConfigKeys.ALERT_EMAIL_PORT, "java.lang.String"),
           new ImmutableTriple<String, String, String>("MmxAlertEmailUser", MMXConfigKeys.ALERT_EMAIL_USER, "java.lang.String"),
@@ -323,8 +321,8 @@ public class MMXConfigurationTest {
     mmxConfiguration.setValue(MMXConfigKeys.MAX_DEVICES_PER_APP, "10");
     mmxConfiguration.setValue(MMXConfigKeys.MAX_DEVICES_PER_USER, "10");
     mmxConfiguration.setValue(MMXConfigKeys.MAX_APP_PER_OWNER, "5");
-    mmxConfiguration.setValue(MMXConfigKeys.MAX_INAPP_MESSAGE_RATE, "100");
-    mmxConfiguration.setValue(MMXConfigKeys.MAX_PUSH_MESSAGE_RATE, "100");
+    mmxConfiguration.setValue(MMXConfigKeys.MAX_XMPP_RATE, "-1");
+    mmxConfiguration.setValue(MMXConfigKeys.MAX_HTTP_RATE, "-1");
     mmxConfiguration.setValue(MMXConfigKeys.ALERT_EMAIL_HOST, MMXServerConstants.DEFAULT_EMAIL_HOST);
     mmxConfiguration.setValue(MMXConfigKeys.ALERT_EMAIL_PORT, Integer.toString(MMXServerConstants.DEFAULT_SMTP_PORT));
     mmxConfiguration.setValue(MMXConfigKeys.ALERT_EMAIL_USER, MMXServerConstants.DEFAULT_EMAIL_USER);

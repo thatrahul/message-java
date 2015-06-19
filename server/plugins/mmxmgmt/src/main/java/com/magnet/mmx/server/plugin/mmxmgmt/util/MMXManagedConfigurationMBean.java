@@ -93,11 +93,11 @@ public interface MMXManagedConfigurationMBean {
   public long getClusterMaxAppsPerServer();
   public void setClusterMaxAppsPerServer(long maxAppsPerServer);
 
-  public long getInstanceMaxInappMessageRate();
-  public void setInstanceMaxInappMessageRate(long maxInAppMessageRate);
+  public long getInstanceMaxXmppRate();
+  public void setInstanceMaxXmppRate(long maxXmppRate);
 
-  public long getInstanceMaxPushMessageRate();
-  public void setInstanceMaxPushMessageRate(long maxPushMessageRate);
+  public long getInstanceMaxHttpRate();
+  public void setInstanceMaxHttpRate(long maxHttpRate);
 
   public String getMmxAlertEmailHost();
   public void setMmxAlertEmailHost(String mmxAlertEmailHost);

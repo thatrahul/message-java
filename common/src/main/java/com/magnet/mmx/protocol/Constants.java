@@ -364,6 +364,10 @@ public class Constants {
      * Search topics by tags
      */
     searchByTags,
+    /**
+     * Get published items by item ID's
+     */
+    getItems,
   }
 
   // constants used in top level push payloads

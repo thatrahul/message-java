@@ -15,10 +15,10 @@
 package com.magnet.mmx.util;
 
 import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXEvent;
-import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXInAppRateExceededEvent;
+import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXXmppRateExceededEvent;
 import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXMaxAppLimitReachedEvent;
 import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXMaxDevicesPerAppLimitReachedEvent;
-import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXPushMessageRateExceededEvent;
+import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXHttpRateExceededEvent;
 import com.magnet.mmx.server.plugin.mmxmgmt.util.AlertEventsManager;
 import com.magnet.mmx.server.plugin.mmxmgmt.util.MMXConfigKeys;
 import com.magnet.mmx.server.plugin.mmxmgmt.util.MMXConfiguration;
@@ -86,9 +86,9 @@ public class AlertEventsManagerTest {
     int index = RandomUtils.nextInt(4);
     switch(index) {
       case 0:
-        return new MMXPushMessageRateExceededEvent("aaaaa", 100);
+        return new MMXHttpRateExceededEvent("aaaaa", 100);
       case 1:
-        return new MMXInAppRateExceededEvent("bbbbb", 200);
+        return new MMXXmppRateExceededEvent("bbbbb", 200);
       case 2:
         return new MMXMaxAppLimitReachedEvent(10, "johndoe");
       case 3:

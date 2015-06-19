@@ -16,9 +16,20 @@
 package com.magnet.mmx.server.plugin.mmxmgmt.handler;
 
 import com.google.common.base.Strings;
-import com.magnet.mmx.protocol.*;
+import com.magnet.mmx.protocol.APNS;
+import com.magnet.mmx.protocol.AppCreate;
+import com.magnet.mmx.protocol.AppRead;
+import com.magnet.mmx.protocol.Constants;
+import com.magnet.mmx.protocol.GCM;
+import com.magnet.mmx.protocol.MMXStatus;
 import com.magnet.mmx.server.common.data.AppEntity;
-import com.magnet.mmx.server.plugin.mmxmgmt.db.*;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.AppAlreadyExistsException;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.AppDAO;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.AppDAOImpl;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.AppDoesntExistException;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.AppManagementException;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.DbInteractionException;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.OpenFireDBConnectionProvider;
 import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXMaxAppLimitReachedEvent;
 import com.magnet.mmx.server.plugin.mmxmgmt.monitoring.MaxAppLimitExceededException;
 import com.magnet.mmx.server.plugin.mmxmgmt.util.AlertEventsManager;
@@ -37,14 +48,12 @@ import org.slf4j.LoggerFactory;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.servlet.http.HttpServletResponse;
-import java.security.SignatureException;
 
 public class MMXAppManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MMXAppManager.class) ;
 
   private XMPPServer server = XMPPServer.getInstance();
-  private DatabaseHandler databaseHandler = DatabaseHandler.getInstance();
 
   private static MMXAppManager instance = null;
 
@@ -155,24 +164,7 @@ public class MMXAppManager {
     return response;
   }
 
-  public void updateServerSecret(String appId, String serverSecret) throws AppDoesntExistException, SignatureException, UserNotFoundException {
-    // update the password to guest account
-    String serverUser = databaseHandler.getServerUser(appId);
-    XMPPServer server = XMPPServer.getInstance();
 
-    User user = server.getUserManager().getUser(serverUser);
-    user.setPassword(serverSecret);
-
-  }
-
-  public void updateGuestSecret(String appId, String guestSecret) throws AppDoesntExistException, SignatureException, UserNotFoundException {
-    // update the password to guest account
-    databaseHandler.updateAppGuestSecret(appId, guestSecret);
-  }
-
-  public MyAppsRead.Response getAppByName(String appName) throws AppDoesntExistException{
-    return databaseHandler.getAppByName(appName);
-  }
 
   public MMXStatus updateApp(String appId, String appName, String googleApiKey, String googleProjectId, String apnsCertInBase64,
                         String apnsPwd) throws AppDoesntExistException {
@@ -191,8 +183,9 @@ public class MMXAppManager {
   }
 
   public void deleteApp(String appId) throws AppDoesntExistException, UserNotFoundException {
-
-    String userName = databaseHandler.getServerUser(appId);
+    AppDAO appDAO = new AppDAOImpl(new OpenFireDBConnectionProvider());
+    AppEntity appEntity = appDAO.getAppForAppKey(appId);
+    String userName = appEntity.getServerUserId();
     if (userName != null) {
       User user = server.getUserManager().getUser(userName);
       if (user != null) {
@@ -203,7 +196,7 @@ public class MMXAppManager {
       }
     }
     // now delete the bootstrap client user
-    String clientBootstrapUserId = databaseHandler.getBootstrapClientUser(appId);
+    String clientBootstrapUserId = appEntity.getGuestUserId();
     if (clientBootstrapUserId != null) {
       User user = server.getUserManager().getUser(clientBootstrapUserId);
       if (user != null) {
@@ -213,7 +206,7 @@ public class MMXAppManager {
 
     //TODO cleanup pending messages, devices, message status
     // delete all the users for this appId
-    AppDAO appDAO = new AppDAOImpl(new OpenFireDBConnectionProvider());
+
     appDAO.deleteApp(appId);
   }
 

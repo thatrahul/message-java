@@ -1,0 +1,1 @@
+/mnt/jenkins/slave_files/workspace/mmx-repo-stage-MMX/message-java-new/pom.xml.oss

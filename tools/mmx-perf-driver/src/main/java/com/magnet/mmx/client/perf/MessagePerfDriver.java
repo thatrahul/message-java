@@ -20,6 +20,7 @@ import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Random;
 
 import com.magnet.mmx.client.MMXClient;
@@ -45,72 +46,122 @@ import com.magnet.mmx.protocol.GCM;
 import com.magnet.mmx.protocol.MMXTopic;
 import com.magnet.mmx.util.Base64;
 
-
-enum Event {
-  CONNECTED,
-  NOTCONNECTED,
-  DONE,
-  DISCONNECTED,
-}
-
-interface EventListener {
-  public void onEvent(Event event, MessagePerfDriver.TestClient client);
-}
-
-public class MessagePerfDriver implements EventListener{
+public class MessagePerfDriver {
   private final static String TAG = "MessagePerfDriver";
   private final static String SERVER_USER = "server-user";
   private final static String SERVER_PWD = "test435";
+  private final static char DELIMITER = '|';
+  private boolean mStarted;
   private Thread mThread;
-  private DriverConfig mConfig;
-  private ArrayList<TestClient> mConClients;
-  private ArrayList<TestClient> mDiscClients;
+  private MessageDriverConfig mConfig;
+  private ArrayList<MsgClient> mConClients;
+  private ArrayList<MsgClient> mDiscClients;
   private MMXSettings mSettings;
-  private String mHeader;
-  private String mDiscHeader;
   private Random mRand = new Random();
   private Options OPTIONS_RCPT_ENABLED = new Options().enableReceipt(true);
 
-  private MMXConnectionListener mConListener = new MMXConnectionListener() {
+  private EventListener<MsgClient> mClientListener = new EventListener<MsgClient>() {
     @Override
-    public void onConnectionEstablished() {
-      // Ignored.
-    }
-
-    @Override
-    public void onConnectionClosed() {
-      // Ignored.
-    }
-
-    @Override
-    public void onConnectionFailed(Exception cause) {
-      System.err.print("onConnectionFailed: "+cause.getMessage());
-//      cause.printStackTrace();
-    }
-
-    @Override
-    public void onAuthenticated(String user) {
-      System.out.println("onAuthenticated: "+user);
-    }
-
-    @Override
-    public void onAuthFailed(String user) {
-      System.err.println("onAuthFailed: "+user);
-    }
-
-    @Override
-    public void onAccountCreated(String user) {
-      // Ignored
+    public void onEvent(Event event, MsgClient client) {
+      synchronized(mConClients) {
+        switch (event) {
+        case CONNECTED:
+          mConClients.add(client);
+          break;
+        case NOTCONNECTED:
+          mDiscClients.add(client);
+          break;
+        case DONE:
+          mThread.interrupt();
+          break;
+        case DISCONNECTED:
+          if (mConClients.remove(client)) {
+            mDiscClients.add(client);
+          }
+          break;
+        }
+      }
     }
   };
   
-  class TestClient extends Thread implements MMXConnectionListener, MMXMessageListener {
+  private Accessor<MsgClient, Integer> mMsgErrAccessor = new Accessor<MsgClient, Integer>() {
+    @Override
+    public Integer get(MsgClient client) {
+      return client.mMsgError;
+    }
+  };
+  
+  private Accessor<MsgClient, Integer> mMsgSentAccessor = new Accessor<MsgClient, Integer>() {
+    @Override
+    public Integer get(MsgClient client) {
+      return client.mMsgSent;
+    }
+  };
+  
+  private Accessor<MsgClient, Integer> mMsgRcvdAccessor = new Accessor<MsgClient, Integer>() {
+    public Integer get(MsgClient client) {
+      return client.mMsgRcved;
+    }
+  };
+  
+  private Accessor<MsgClient, Integer> mMsgDelayAccessor = new Accessor<MsgClient, Integer>() {
+    public Integer get(MsgClient client) {
+      return client.mDelayMsg;
+    }
+  };
+  
+  private Accessor<MsgClient, Integer> mRcptSentAccessor = new Accessor<MsgClient, Integer>() {
+    public Integer get(MsgClient client) {
+      return client.mReceiptSent;
+    }
+  };
+  
+  private Accessor<MsgClient, Integer> mRcptErrAccessor = new Accessor<MsgClient, Integer>() {
+    public Integer get(MsgClient client) {
+      return client.mReceiptFailed;
+    }
+  };
+  
+  private Accessor<MsgClient, Integer> mRcptRtnAccessor = new Accessor<MsgClient, Integer>() {
+    public Integer get(MsgClient client) {
+      return client.mMsgDelivered;
+    }
+  };
+  
+  static class MessageDriverConfig extends DriverConfig {
+    public int receiptPercent;
+    
+    public int parseExtraOption(String[] args, int index) {
+      if (args[index].equals("-e")) {
+        String arg = args[++index];
+        receiptPercent = Math.abs(parseInt(arg)) % 101;
+        return index;
+      } else {
+        throw new IllegalArgumentException("Invalid option: "+args[index]);
+      }
+    }
+    
+    public void printExtraUsage() {
+      System.out.println("[-e 0..100]");
+    }
+    
+    public void printExtraHint() {
+      System.out.println("-e for percentage to send delivery receipt");
+    }
+    
+    public void reportExtraConfig(StringBuilder sb) {
+      // Ignored.
+    }
+  }
+  
+  class MsgClient extends Thread implements MMXConnectionListener, MMXMessageListener {
     // Statistics
     public int mPayloadSize;
     public long mWaitTime;
     public long mSentTime;
     public long mSentTotal;
     public long mRcvTotal;
+    public int mItemRcved;
     public int mMsgRcved;
     public int mMsgSent;
     public int mMsgSendFailed;
@@ -121,20 +172,23 @@ public class MessagePerfDriver implements EventListener{
     public int mConError;
     public int mDelayMsg;
     
+    private StringBuilder mHeader;
     private boolean mDone;
     private boolean mAbort;
     private CharBuffer mText;
     private MessageManager mMsgMgr;
     private MessagePerfDriver mDriver;
-    private EventListener mListener;
+    private EventListener<MsgClient> mListener;
     private MMXContext mContext;
     private MMXid mClientId;
     private MMXClient mClient;
     private String mUserId;
     
-    public TestClient(String userId, String devId, MessagePerfDriver driver,
-                       EventListener listener) {
+    public MsgClient(String userId, String devId, MessagePerfDriver driver,
+                       EventListener<MsgClient> listener) {
       super(userId);
+      this.setName(userId);
+      this.setDaemon(true);
       mDriver = driver;
       mListener = listener;
       mUserId = userId;
@@ -145,20 +199,46 @@ public class MessagePerfDriver implements EventListener{
       Arrays.fill(mText.array(), 'x');
     }
     
+    public StringBuilder getHeader(String prefix, StringBuilder sb) {
+      if (mHeader == null) {
+        mHeader = new StringBuilder(160).append('\n')
+            .append(Utils.pad("Client", 20)).append(DELIMITER)
+            .append(Utils.pad("Size", 8)).append(DELIMITER)
+            .append(Utils.pad("ConErr", 8)).append(DELIMITER)
+            .append(Utils.pad("#ErrMsg", 10)).append(DELIMITER)
+            .append(Utils.pad("#MsgSent", 10)).append(DELIMITER)
+            .append(Utils.pad("BytesSent", 15)).append(DELIMITER)
+            .append(Utils.pad("#MsgRcvd", 10)).append(DELIMITER)
+            .append(Utils.pad("BytesRcvd", 15)).append(DELIMITER)
+            .append(Utils.pad("AvgSentTm", 10)).append(DELIMITER)
+            .append(Utils.pad("#MsgDelay", 10)).append(DELIMITER)
+            .append(Utils.pad("RcptSnt", 8)).append(DELIMITER)
+            .append(Utils.pad("RcptErr", 8)).append(DELIMITER)
+            .append(Utils.pad("RcptRtn", 8)).append(DELIMITER)
+            .append('\n');
+      }
+      if (prefix != null && !prefix.isEmpty()) {
+        sb.append('\n').append(prefix);
+      }
+      sb.append(mHeader);
+      return sb;
+    }
+    
     public void getReport(StringBuilder sb) {
-      long avgSentTime = (mMsgRcved == 0) ? 0 : mSentTime / mMsgRcved;
-      sb.append(Utils.pad(mClientId.toString(), 20))
-        .append(Utils.pad(mPayloadSize, 8))
-        .append(Utils.pad(mConError, 8))
-        .append(Utils.pad(mMsgSent, 10))
-        .append(Utils.pad(mSentTotal, 15))
-        .append(Utils.pad(mMsgRcved, 10))
-        .append(Utils.pad(mRcvTotal, 15))
-        .append(Utils.pad(avgSentTime, 10))
-        .append(Utils.pad(mDelayMsg, 10))
-        .append(Utils.pad(mReceiptSent, 8))
-        .append(Utils.pad(mReceiptFailed, 8))
-        .append(Utils.pad(mMsgDelivered, 8))
+      long avgSentTime = ((mMsgRcved - mDelayMsg) == 0) ? 0 : mSentTime / (mMsgRcved - mDelayMsg);
+      sb.append(Utils.pad(mClientId.toString(), 20)).append(DELIMITER)
+        .append(Utils.pad(mPayloadSize, 8)).append(DELIMITER)
+        .append(Utils.pad(mConError, 8)).append(DELIMITER)
+        .append(Utils.pad(mMsgError, 10)).append(DELIMITER)
+        .append(Utils.pad(mMsgSent, 10)).append(DELIMITER)
+        .append(Utils.pad(mSentTotal, 15)).append(DELIMITER)
+        .append(Utils.pad(mMsgRcved, 10)).append(DELIMITER)
+        .append(Utils.pad(mRcvTotal, 15)).append(DELIMITER)
+        .append(Utils.pad(avgSentTime, 10)).append(DELIMITER)
+        .append(Utils.pad(mDelayMsg, 10)).append(DELIMITER)
+        .append(Utils.pad(mReceiptSent, 8)).append(DELIMITER)
+        .append(Utils.pad(mReceiptFailed, 8)).append(DELIMITER)
+        .append(Utils.pad(mMsgDelivered, 8)).append(DELIMITER)
         .append('\n');
     }
     
@@ -180,6 +260,7 @@ public class MessagePerfDriver implements EventListener{
       } catch (Throwable e) {
         System.err.println("Client "+mUserId+" is not ready");
         e.printStackTrace();
+        mClientId = new MMXid(mUserId);
         mListener.onEvent(Event.NOTCONNECTED, this);
         return;
       }
@@ -192,7 +273,7 @@ public class MessagePerfDriver implements EventListener{
           // Ignored.
         }
       }
-
+      
       // Start sending messages.
       mDone = false;
       mAbort = false;
@@ -201,11 +282,12 @@ public class MessagePerfDriver implements EventListener{
         long endTime = System.currentTimeMillis() + mDriver.getConfig().duration;
         while (!mAbort && System.currentTimeMillis() < endTime) {
           Thread.sleep(mWaitTime);
-          MMXPayload payload = new MMXPayload(mText);
           MMXid to = mDriver.getRandomRecipient();
           if (to == null) {
+            // No connected clients (including self) available.
             break;
           }
+          MMXPayload payload = new MMXPayload(mText);
           Options options = mDriver.getRandomReceipt();
           mMsgMgr.sendPayload(new MMXid[] { to }, payload, options);
         }
@@ -220,13 +302,16 @@ public class MessagePerfDriver implements EventListener{
 
     @Override
     public void onMessageReceived(MMXMessage message, String receiptId) {
+      if (!MessagePerfDriver.this.isStarted())
+        return;
+      
       mMsgRcved++;
       Date sentTime = message.getPayload().getSentTime();
       long tod = System.currentTimeMillis();
       long elapsed = tod - sentTime.getTime();
-      if (elapsed <= 10000)
+      if (elapsed <= 10000) {
         mSentTime += elapsed;
-      else {
+      } else {
         mDelayMsg++;
       }
       mRcvTotal += message.getPayload().getDataSize();
@@ -243,17 +328,26 @@ public class MessagePerfDriver implements EventListener{
 
     @Override
     public void onMessageSent(String msgId) {
+      if (!MessagePerfDriver.this.isStarted())
+        return;
+      
       mMsgSent++;
       mSentTotal += mPayloadSize;
     }
 
     @Override
     public void onMessageFailed(String msgId) {
+      if (!MessagePerfDriver.this.isStarted())
+        return;
+      
       mMsgSendFailed++;
     }
 
     @Override
     public void onMessageDelivered(MMXid recipient, String msgId) {
+      if (!MessagePerfDriver.this.isStarted())
+        return;
+      
       mMsgDelivered++;
     }
 
@@ -269,11 +363,17 @@ public class MessagePerfDriver implements EventListener{
 
     @Override
     public void onItemReceived(MMXMessage msg, MMXTopic topic) {
-      // Ignored.
+      if (!MessagePerfDriver.this.isStarted())
+        return;
+      
+      mItemRcved++;
     }
 
     @Override
     public void onErrorMessageReceived(MMXErrorMessage message) {
+      if (!MessagePerfDriver.this.isStarted())
+        return;
+      
       mMsgError++;
     }
 
@@ -310,7 +410,7 @@ public class MessagePerfDriver implements EventListener{
     }
   }
 
-  public MessagePerfDriver(DriverConfig config) throws MMXException {
+  public MessagePerfDriver(MessageDriverConfig config) throws MMXException {
     Log.setLoggable(TAG, config.logLevel);
     MMXContext appContext = new MMXContext(".", "0.9", "instance-1");
     if (config.registerApp) {
@@ -325,56 +425,25 @@ public class MessagePerfDriver implements EventListener{
     }
     mThread = Thread.currentThread();
     mConfig = config;
-    mHeader = new StringBuilder(128).append('\n')
-        .append(Utils.pad("Live Client", 20))
-        .append(Utils.pad("Size", 8))
-        .append(Utils.pad("ConErr", 8))
-        .append(Utils.pad("#MsgSent", 10))
-        .append(Utils.pad("BytesSent", 15))
-        .append(Utils.pad("#MsgRcvd", 10))
-        .append(Utils.pad("BytesRcvd", 15))
-        .append(Utils.pad("AvgSentTm", 10))
-        .append(Utils.pad("#MsgDelay", 10))
-        .append(Utils.pad("RcptSnt", 8))
-        .append(Utils.pad("RcptErr", 8))
-        .append(Utils.pad("RcptRtn", 8))
-        .append('\n').toString();
-    mDiscHeader = new StringBuilder(128).append('\n')
-        .append(Utils.pad("Dead Client", 20))
-        .append(Utils.pad("Size", 8))
-        .append(Utils.pad("ConErr", 8))
-        .append(Utils.pad("#MsgSent", 10))
-        .append(Utils.pad("BytesSent", 15))
-        .append(Utils.pad("#MsgRcvd", 10))
-        .append(Utils.pad("BytesRcvd", 15))
-        .append(Utils.pad("AvgSentTm", 10))
-        .append(Utils.pad("#MsgDelay", 10))
-        .append(Utils.pad("RcptSnt", 8))
-        .append(Utils.pad("RcptErr", 8))
-        .append(Utils.pad("RcptRtn", 8))
-        .append('\n').toString();
   }
 
-  public void onEvent(Event event, TestClient client) {
-    synchronized(mConClients) {
-      switch (event) {
-      case CONNECTED:
-        mConClients.add(client);
-        break;
-      case NOTCONNECTED:
-        mDiscClients.add(client);
-        break;
-      case DONE:
-        mThread.interrupt();
-        break;
-      case DISCONNECTED:
-        if (mConClients.remove(client)) {
-          mDiscClients.add(client);
-        }
-        break;
-      }
-    }
+  public void getTotalsReport(StringBuilder sb, List<MsgClient> clients) {
+    sb.append(Utils.pad("== TOTAL ==", 20)).append(DELIMITER)
+      .append(Utils.pad("", 8)).append(DELIMITER)
+      .append(Utils.pad("", 8)).append(DELIMITER)
+      .append(Utils.pad(grandTotal(clients, mMsgErrAccessor), 10)).append(DELIMITER)
+      .append(Utils.pad(grandTotal(clients, mMsgSentAccessor), 10)).append(DELIMITER)
+      .append(Utils.pad("", 15)).append(DELIMITER)
+      .append(Utils.pad(grandTotal(clients, mMsgRcvdAccessor), 10)).append(DELIMITER)
+      .append(Utils.pad("", 15)).append(DELIMITER)
+      .append(Utils.pad("", 10)).append(DELIMITER)
+      .append(Utils.pad(grandTotal(clients, mMsgDelayAccessor), 10)).append(DELIMITER)
+      .append(Utils.pad(grandTotal(clients, mRcptSentAccessor), 8)).append(DELIMITER)
+      .append(Utils.pad(grandTotal(clients, mRcptErrAccessor), 8)).append(DELIMITER)
+      .append(Utils.pad(grandTotal(clients, mRcptRtnAccessor), 8)).append(DELIMITER)
+      .append('\n');
   }
+
   
   public DriverConfig getConfig() {
     return mConfig;
@@ -393,10 +462,29 @@ public class MessagePerfDriver implements EventListener{
     MMXSettings settings = new MMXSettings(context, appName+".props");
     settings.setString(MMXSettings.PROP_HOST, host);
     settings.setInt(MMXSettings.PROP_PORT, 5222);
+    settings.setBoolean(MMXSettings.PROP_ENABLE_COMPRESSION, false);
     
+    MMXConnectionListener conListener = new MMXConnectionListener() {
+      @Override
+      public void onConnectionEstablished() { }
+      @Override
+      public void onConnectionClosed() { }
+      @Override
+      public void onAuthenticated(String user) { }
+      @Override
+      public void onAccountCreated(String user) { }
+      @Override
+      public void onConnectionFailed(Exception cause) {
+        System.err.print("onConnectionFailed: "+cause.getMessage());
+      }
+      @Override
+      public void onAuthFailed(String user) {
+        System.err.println("onAuthFailed: "+user);
+      }
+    };
     MMXConnection con = new MMXConnection(context, settings);
     try {
-      con.connect(mConListener);
+      con.connect(conListener);
       con.authenticateRaw(adminUser, adminPwd, "smack", 0);
       byte[] apnsCert = { 0x1, 0x2, 0x3, 0x4, 0x0, (byte) 0xff, 
                           (byte) 0xfe, (byte) 0x80, 0x7f };
@@ -428,13 +516,17 @@ public class MessagePerfDriver implements EventListener{
   // Create the clients and let them connect first.  Each client will then wait
   // for a signal to start sending messages among the clients.
   public MessagePerfDriver init() {
-    mDiscClients = new ArrayList<TestClient>();
-    mConClients = new ArrayList<TestClient>(mConfig.numClients);
+    mDiscClients = new ArrayList<MsgClient>();
+    mConClients = new ArrayList<MsgClient>(mConfig.numClients);
     for (int i = 0; i < mConfig.numClients; i++) {
       int j = 1000 + i;
-      new TestClient("u-"+j, "d-"+j, this, this).start();
+      new MsgClient(mConfig.userPrefix+j, "d-"+j, this, mClientListener).start();
     }
     return this;
+  }
+  
+  public boolean isStarted() {
+    return mStarted;
   }
   
   // Wait for all clients connected
@@ -442,7 +534,7 @@ public class MessagePerfDriver implements EventListener{
     if (mConClients == null) {
       throw new IllegalStateException("Not call init() yet");
     }
-    System.out.println("Waiting for all clients connected: "+
+    System.out.println(mConfig.numClients+" clients: "+
         mDiscClients.size()+" not connected, "+mConClients.size()+" connected");
     while ((mDiscClients.size() + mConClients.size()) < mConfig.numClients) {
       try {
@@ -472,9 +564,19 @@ public class MessagePerfDriver implements EventListener{
     
     // Notify all connected clients to start sending messages.
     synchronized(this) {
+      mStarted = true;
       notifyAll();
     }
     return this;
+  }
+
+  public int grandTotal(List<MsgClient> clients, 
+                         Accessor<MsgClient, Integer> accessor) {
+    int total = 0;
+    for (MsgClient client : clients) {
+      total += accessor.get(client);
+    }
+    return total;
   }
   
   // Wait for all clients done.
@@ -486,7 +588,7 @@ public class MessagePerfDriver implements EventListener{
 
     while (!isAllDone()) {
       try {
-        Thread.sleep(15000L);
+        Thread.sleep(mConfig.refreshTime);
       } catch (InterruptedException e) {
         // One client is done.
       }
@@ -495,18 +597,28 @@ public class MessagePerfDriver implements EventListener{
     return this;
   }
   
+  public MessagePerfDriver reportConfig() {
+    StringBuilder sb = new StringBuilder(512);
+    System.out.println(mConfig.reportConfig(sb));
+    return this;
+  }
+  
   // Generate a report
   public MessagePerfDriver report() {
     StringBuilder sb = new StringBuilder(2048);
-    sb.append(MessagePerfDriver.this.mHeader);
-    for (TestClient client : mConClients) {
-      client.getReport(sb);
-    }
-    if (!mDiscClients.isEmpty()) {
-      sb.append(MessagePerfDriver.this.mDiscHeader);
-      for (TestClient client : mDiscClients) {
+    if (!mConClients.isEmpty()) {
+      mConClients.get(0).getHeader("Live", sb);
+      for (MsgClient client : mConClients) {
         client.getReport(sb);
       }
+      getTotalsReport(sb, mConClients);
+    }
+    if (!mDiscClients.isEmpty()) {
+      mDiscClients.get(0).getHeader("Dead", sb);
+      for (MsgClient client : mDiscClients) {
+        client.getReport(sb);
+      }
+      getTotalsReport(sb, mDiscClients);
     }
     System.out.println(sb);
     return this;
@@ -518,15 +630,18 @@ public class MessagePerfDriver implements EventListener{
       throw new IllegalStateException("Not call init() yet");
     }
 //    System.out.println("shutdown()");
+    synchronized(mConClients) {
+      for (MsgClient client : mConClients) {
+        client.halt();
+      }
+    }
+    mStarted = false;
     if (delay > 0) {
       try {
         Thread.sleep(delay);
       } catch (InterruptedException e) {
         // Ignored.
       }
-    }
-    for (TestClient client : mConClients) {
-      client.halt();
     }
     return this;
   }
@@ -564,7 +679,7 @@ public class MessagePerfDriver implements EventListener{
   }
   
   private boolean isAllDone() {
-    for (TestClient client : mConClients) {
+    for (MsgClient client : mConClients) {
       if (!client.isDoneSending()) {
         return false;
       }
@@ -576,151 +691,20 @@ public class MessagePerfDriver implements EventListener{
    * The main entry point.
    */
   public static void main(String[] args) {
-    DriverConfig config = DriverConfig.parseOptions(args);
+    MessageDriverConfig config = new MessageDriverConfig();
+    config.parseOptions(args);
     try {
       new MessagePerfDriver(config)
           .init()
           .waitForConnected()
           .start()
           .waitForDone()
-          .shutdown(5L);
+          .shutdown(5000L)
+          .reportConfig()
+          .report();
     } catch (Throwable e) {
       e.printStackTrace();
     }
   }
 }
 
-class DriverConfig {
-  public String appName = "PerfDrvApp";
-  public String host = "52.8.32.38";
-  public int logLevel = Log.DEBUG;
-  public int numClients = 1;        // # clients plus one driver.
-  public int minSize = 2000;        // in bytes
-  public int maxSize = 200000;
-  public long minWaitTime = 250;    // in msec
-  public long maxWaitTime = 500;    // in msec
-  public long duration = 60 * 1000;        // in msec
-  public int receiptPercent = 0;
-  public boolean registerApp = false;
-
-  public static DriverConfig parseOptions(String[] args) {
-    DriverConfig drvOpts = new DriverConfig();
-    for (int i = 0; i < args.length; i++) {
-      String opt = args[i];
-      if (opt.equals("-?")) {
-        System.out.println("[-h host] [-r] -n AppName [-l s|v|d|i|w|e] "+
-            "[-c numClients] [-t 0..100] [-s minSize] [-S maxSize] "+
-            "[-w minWait] [-W maxWait] [-d duration] [-?]");
-        System.out.println("size has M|m|K|k, wait/duration has w|d|h|m|s|M");
-        System.out.println("-t for receipt enable probability");
-        System.exit(0);
-      } else if (opt.equals("-r")) {
-        drvOpts.registerApp = true;
-      } else if (opt.equals("-n")) {
-        String arg = args[++i];
-        drvOpts.appName = arg;
-      } else if (opt.equals("-c")) {
-        String arg = args[++i];
-        drvOpts.numClients = parseInt(arg);
-      } else if (opt.equals("-s")) {
-        String arg = args[++i];
-        drvOpts.minSize = parseSize(arg);
-      } else if (opt.equals("-S")) {
-        String arg = args[++i];
-        drvOpts.maxSize = parseSize(arg);
-      } else if (opt.equals("-w")) {
-        String arg = args[++i];
-        drvOpts.minWaitTime = parseTime(arg);
-      } else if (opt.equals("-W")) {
-        String arg = args[++i];
-        drvOpts.maxWaitTime = parseTime(arg);
-      } else if (opt.equals("-d")) {
-        String arg = args[++i];
-        drvOpts.duration = parseTime(arg);
-      } else if (opt.equals("-l")) {
-        String arg = args[++i];
-        drvOpts.logLevel = parseLogLevel(arg);
-      } else if (opt.equalsIgnoreCase("-t")) {
-        String arg = args[++i];
-        drvOpts.receiptPercent = Math.abs(parseInt(arg)) % 101;
-      } else {
-        throw new IllegalArgumentException("[-h host] [-r] -n appName "+
-            "[-l s|v|d|i|w|e] [-c numClients] [-s minSize] [-S maxSize] "+
-            "[-w minWait] [-W maxWait] [-d duration] [-t 0..100] [-?]; unknown opt: "+opt);
-      }
-    }
-    return drvOpts;
-  }
-
-  public static int parseSize(String arg) {
-    int unit = 1;
-    char c = arg.charAt(arg.length()-1);
-    switch(c) {
-    case 'K':
-      unit = 1024; break;
-    case 'k':
-      unit = 1000; break;
-    case 'M':
-      unit = 1024*1024; break;
-    case 'm':
-      unit = 1000*1000; break;
-    default:
-      if (c < '0' || c > '9') {
-        throw new IllegalArgumentException("Invalid unit (M|m|K|k): "+arg);
-      }
-      return Integer.parseInt(arg);
-    }
-    return Integer.parseInt(arg.substring(0, arg.length()-1)) * unit;
-  }
-
-  public static long parseTime(String arg) {
-    long unit = 1;
-    char c = arg.charAt(arg.length()-1);
-    switch(c) {
-    case 'w':
-      unit = 7 * 24 * 3600 * 1000; break;
-    case 'd':
-      unit = 24 * 3600 * 1000; break;
-    case 'h':
-      unit = 3600 * 1000; break;
-    case 'm':
-      unit = 60 * 1000; break;
-    case 's':
-      unit = 1000; break;
-    case 'M':
-      unit = 1; break;
-    default:
-      throw new IllegalArgumentException("Invalid unit (w|d|h|m|s|M): "+arg);
-    }
-    return Long.parseLong(arg.substring(0, arg.length()-1)) * unit;
-  }
-  
-  public static int parseLogLevel(String arg) {
-    if (arg.equalsIgnoreCase("s")) {
-      return Log.SUPPRESS;
-    } else if (arg.equalsIgnoreCase("v")) {
-      return Log.VERBOSE;
-    } else if (arg.equalsIgnoreCase("d")) {
-      return Log.DEBUG;
-    } else if (arg.equalsIgnoreCase("i")) {
-      return Log.INFO;
-    } else if (arg.equalsIgnoreCase("w")) {
-      return Log.WARN;
-    } else if (arg.equalsIgnoreCase("e")) {
-      return Log.ERROR;
-    }
-    throw new IllegalArgumentException("Invalid log level (s|v|d|i|w|e): "+arg);
-  }
-
-  public static int parseInt(String arg) {
-    return Integer.parseInt(arg);
-  }
-  
-  public static boolean parseBool(String arg) {
-    return Boolean.parseBoolean(arg);
-  }
-  
-  public static String[] parseCommaList(String arg) {
-    return arg.split(",");
-  }
-}

@@ -64,7 +64,6 @@ import java.util.concurrent.TimeUnit;
 
 @Path("/devices")
 @Produces({MediaType.APPLICATION_JSON})
-@MMXHeaderAuth
 public class DevicesResource extends AbstractBaseResource {
   private static Logger LOGGER = LoggerFactory.getLogger(DevicesResource.class);
 

@@ -1453,8 +1453,7 @@ public final class MMXClient {
     
     /**
      * Called when an error message is received.  The payload in the error
-     * message can be an MMXError or custom; use {@link MMXPayload#getType()}
-     * and {@link MMXError#getType()} to identify the payload, and use
+     * message can be an MMXError or custom; use {@link MMXError#getType()} to identify the payload, and use
      * {@link MMXError#fromJson(String)} and {@link MMXPayload#getDataAsText()}
      * to construct the MMXError payload.
      * @param client The instance of the MMXClient
@@ -1538,7 +1537,15 @@ public final class MMXClient {
   }
 
   /**
-   * Implement this interface with a default public constructor
+   * Implement this interface with a default public constructor.  This implementation is required
+   * if the application needs to handle any wake-up events (including GCM push messages or timer-based
+   * wake-ups).
+   *
+   * To use the MMX client wake-up functionality, register the MMXWakeupListener implementation
+   * {@link #registerWakeupListener(Context, Class)}.  Setup either a scheduled wake-up
+   * {@link #scheduleWakeupAlarm(Context, long)} OR configure GCM for your application
+   * {@see https://developers.google.com/cloud-messaging/android/start} and register the
+   * GCM project ID in the MMX client configuration {@link MMXClientConfig}.
    */
   public interface MMXWakeupListener {
     /**
@@ -1548,7 +1555,7 @@ public final class MMXClient {
      * @param applicationContext The application's context
      * @param intent The intent that caused this wakeup
      */
-    public void onWakeupReceived(Context applicationContext, Intent intent);
+    void onWakeupReceived(Context applicationContext, Intent intent);
   }
 
   private synchronized HostnameVerifier getNaiveHostnameVerifier() {

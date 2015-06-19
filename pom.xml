@@ -2,18 +2,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
+  <organization>
+    <name>Magnet Systems, Inc.</name>
+    <url>https://github.com/magnetsystems/magnet-message</url>
+  </organization>
+
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.magnet.mmx</groupId>
   <artifactId>mmx-root</artifactId>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
 
   <packaging>pom</packaging>
   <name>Magnet Messaging Root</name>
   <description>Magnet Messaging Root</description>
 
   <properties>
-    <mmx.version>1.0.1</mmx.version>
+    <mmx.version>1.0.2</mmx.version>
     <javadoc.version>2.8.1</javadoc.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jvm.source.version>1.6</jvm.source.version>

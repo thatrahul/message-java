@@ -37,8 +37,7 @@ public class AppEntityDBLoadingEntityCache  implements DBEntityCache<AppEntity> 
   public AppEntityDBLoadingEntityCache(int size, CacheLoader<String, AppEntity> appEntityCacheLoader) {
     cache = CacheBuilder.newBuilder()
         .maximumSize(CACHE_SIZE)
-        .build(appEntityCacheLoader
-            );
+        .build(appEntityCacheLoader);
   }
 
   @Override

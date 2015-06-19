@@ -15,6 +15,8 @@
 package com.magnet.mmx.server.plugin.mmxmgmt.api;
 
 import com.magnet.mmx.server.api.v1.DevicesResource;
+import com.magnet.mmx.server.api.v1.MMXAuthHeadersFilter;
+import com.magnet.mmx.server.api.v1.RateLimitFilter;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.message.MessageResource;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.push.PingMessageFunctionResource;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.push.PushMessageFunctionResource;
@@ -25,6 +27,7 @@ import com.magnet.mmx.server.plugin.mmxmgmt.api.tags.MMXUserTagsResource;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.topics.MMXTopicSummaryResource;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.topics.MMXTopicsItemsResource;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.user.MMXUsersResource;
+import com.magnet.mmx.server.plugin.mmxmgmt.servlet.JacksonJSONObjectMapperProvider;
 import com.magnet.mmx.server.plugin.mmxmgmt.servlet.TopicResource;
 
 /**
@@ -54,11 +57,15 @@ public final class RESTResourceListing {
       MMXTopicSummaryResource.class.getName()
   };
 
-
   public static String[] getResources() {
     return resourceClasses;
   }
 
+  private static final String[] providers = {
+          MMXAuthHeadersFilter.class.getName(),
+          RateLimitFilter.class.getName(),
+          JacksonJSONObjectMapperProvider.class.getName()
+  };
 
-
+  public static String[] getProviders() { return providers;}
 }

@@ -14,9 +14,11 @@
  */
 package com.magnet.mmx.server.plugin.mmxmgmt.topic;
 
+import com.magnet.mmx.protocol.MMXTopicId;
 import com.magnet.mmx.server.plugin.mmxmgmt.handler.ConfigureForm;
-import com.magnet.mmx.server.plugin.mmxmgmt.util.Helper;
 import com.magnet.mmx.util.GsonData;
+import com.magnet.mmx.util.TopicHelper;
+
 import org.jivesoftware.openfire.pubsub.LeafNode;
 import org.jivesoftware.openfire.pubsub.Node;
 
@@ -25,6 +27,7 @@ import java.util.List;
 /**
  */
 public class TopicNode {
+  String userId;
   String topicName;
   boolean collection;
   Integer subscriptionCount;
@@ -38,7 +41,14 @@ public class TopicNode {
   List<String> tags;
   boolean subscriptionEnabled;
 
-
+  public String getUserId() {
+    return userId;
+  }
+  
+  public void setUserId(String userId) {
+    this.userId = userId;
+  }
+  
   public String getTopicName() {
     return topicName;
   }
@@ -144,7 +154,9 @@ public class TopicNode {
     TopicNode tn = new TopicNode();
     tn.setDescription(node.getDescription());
     tn.setCollection(node.isCollectionNode());
-    tn.setTopicName(Helper.simplify(appId, node.getNodeID()));
+    MMXTopicId tid = TopicHelper.parseNode(node.getNodeID());
+    tn.setUserId(tid.getUserId());
+    tn.setTopicName(tid.getName());
     tn.setSubscriptionCount(node.getAllSubscriptions().size());
     tn.setCollection(node.isCollectionNode());
     tn.setSubscriptionEnabled(node.isSubscriptionEnabled());

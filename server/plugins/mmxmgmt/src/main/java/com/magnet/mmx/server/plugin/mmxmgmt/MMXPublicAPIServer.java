@@ -14,7 +14,6 @@
  */
 package com.magnet.mmx.server.plugin.mmxmgmt;
 
-import com.magnet.mmx.server.api.v1.MMXAuthHeadersFilter;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.RESTResourceListing;
 import com.magnet.mmx.server.plugin.mmxmgmt.servlet.JacksonJSONObjectMapperProvider;
 import com.magnet.mmx.server.plugin.mmxmgmt.servlet.PushReplyServlet;
@@ -81,22 +80,23 @@ public class MMXPublicAPIServer {
      * add the rest easy endpoint handling the public rest API.
      */
     String[] resourceClasses = RESTResourceListing.getResources();
+    String[] providerList = RESTResourceListing.getProviders();
     String resources = StringUtils.join(resourceClasses, ",");
+    String providers = StringUtils.join(providerList, ",");
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Resource classes:{}", resources);
     }
     ServletHolder holder = new ServletHolder(new org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher());
     holder.setInitParameter(MMXServerConstants.RESTEASY_SERVLET_MAPPING_PREFIX_KEY, MMXServerConstants.PUBLIC_API_SERVLET_MAPPING_PREFIX);
     holder.setInitParameter(MMXServerConstants.RESTEASY_RESOURCES_KEY, resources);
-    holder.setInitParameter(MMXServerConstants.RESTEASY_PROVIDERS_KEY, JacksonJSONObjectMapperProvider.class.getName());
-    holder.setInitParameter("resteasy.providers", MMXAuthHeadersFilter.class.getName());
+    holder.setInitParameter(MMXServerConstants.RESTEASY_PROVIDERS_KEY, providers);
     context.addServlet(holder, MMXServerConstants.PUBLIC_REST_API_MAPPING);
 
 
     try {
       LOGGER.info("Public REST API server starting at port:" + port);
       server.start();
-      LOGGER.info("Public REST API server starting at port:" + port);
+      LOGGER.info("Public REST API server started at port:" + port);
     } catch (Exception e) {
       LOGGER.error("Exception in starting the Public REST API server", e);
     }
@@ -107,7 +107,7 @@ public class MMXPublicAPIServer {
     try {
       LOGGER.info("Stopping Public REST API server");
       server.stop();
-      LOGGER.info("Callback Public REST API server");
+      LOGGER.info("Stopped Public REST API server");
     } catch (Exception e) {
       LOGGER.warn("Exception in stopping Public REST API server", e);
     }

@@ -76,7 +76,7 @@ public class PubSubPersistenceManagerExt {
       + LOAD_ITEMS_BTWN_PREDICATE;
   private static final String GET_ITEM_COUNT = "SELECT count(*) from ofPubsubItem WHERE nodeID=? AND serviceID=?";
   private static final String SEARCH_PROJECTION = 
-      "nodeID,leaf,name,description,persistItems,maxItems,maxPayloadSize,publisherModel,creationDate,modificationDate,creator";
+      "nodeID,leaf,name,description,persistItems,maxItems,maxPayloadSize,publisherModel,creationDate,modificationDate,creator,subscriptionEnabled";
   private static final String SEARCH_BY_NAME = 
       "SELECT "+SEARCH_PROJECTION+" FROM ofPubsubNode "+
       "WHERE name LIKE ? AND serviceID=? AND (nodeID LIKE ? OR nodeID LIKE ?) ORDER BY serviceID,nodeID";
@@ -95,6 +95,7 @@ public class PubSubPersistenceManagerExt {
   private static final int INDEX_SRCH_CREATEDATE = 9;
   private static final int INDEX_SRCH_MODDATE = 10;
   private static final int INDEX_SRCH_CREATOR = 11;
+  private static final int INDEX_SRCH_SUB_ENABLED = 12;
 
   public static List<PublishedItem> getPublishedItems(LeafNode node,
                                                     int maxRows, Date since) {
@@ -415,7 +416,8 @@ public class PubSubPersistenceManagerExt {
           .setPublisherType(ConfigureForm.convert(
             PublisherModel.valueOf(rs.getString(INDEX_SRCH_PUBMODEL))))
           .setPersistent(rs.getBoolean(INDEX_SRCH_PERSISTED))
-          .setCreator(rs.getString(INDEX_SRCH_CREATOR));
+          .setCreator(rs.getString(INDEX_SRCH_CREATOR))
+          .setSubscriptionEnabled(rs.getBoolean(INDEX_SRCH_SUB_ENABLED));
         results.add(result);
       }
     } catch (SQLException e) {

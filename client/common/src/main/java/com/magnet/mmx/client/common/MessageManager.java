@@ -67,19 +67,16 @@ import com.magnet.mmx.util.XIDUtil;
  */
 public class MessageManager {
   private static final String TAG = "MessageManager";
+  private int mAckErrors;
+  private int mAckCounters;
   private MMXConnection mCon;
-  private static QueueExecutor sAckThread;
+  private QueueExecutor mAckExecutor;
   private final static Creator sCreator = new Creator() {
     @Override
     public Object newInstance(MMXConnection con) {
       return new MessageManager(con);
     }
   };
-
-  static {
-    sAckThread = new QueueExecutor("MMX Ack Sender", true);
-    sAckThread.start();
-  }
 
   private PacketListener mEventPacketListener = new PacketListener() {
     @Override
@@ -166,7 +163,7 @@ public class MessageManager {
 //        if (xmppmsg.getType() != Type.normal && ".".equals(xmppmsg.getBody())) {
         if (xmppmsg.getType() != Type.normal) {
           // Must run in a thread because IQ is a blocking call.
-          sAckThread.post(new SendAck(packet));
+          mAckExecutor.post(new SendAck(packet));
         }
 
         if (orgMsgId != null) {
@@ -294,9 +291,11 @@ public class MessageManager {
     @Override
     public void run() {
       try {
+        MessageManager.this.mAckCounters++;
         MessageManager.this.sendAck(mPacket.getFrom(), mPacket.getTo(),
                                      mPacket.getPacketID());
       } catch (Throwable e) {
+        MessageManager.this.mAckErrors++;
         e.printStackTrace();
       }
     }
@@ -304,11 +303,21 @@ public class MessageManager {
 
   protected MessageManager(MMXConnection con) {
     mCon = con;
+    mAckExecutor = new QueueExecutor("MMX Ack Sender", true);
+    mAckExecutor.start();
     MsgMMXIQHandler<MsgsState.Request, MsgsState.Response> msgIQHandler = new
         MsgMMXIQHandler<MsgsState.Request, MsgsState.Response>();
     msgIQHandler.registerIQProvider();
     AckMMXIQHandler ackIQHandler = new AckMMXIQHandler();
     ackIQHandler.registerIQProvider();
+  }
+
+  @Override
+  protected void finalize() {
+    if (mAckExecutor != null) {
+      mAckExecutor.quit();
+      mAckExecutor = null;
+    }
   }
 
   // This must be called prior to the connection to receive messages.
@@ -723,6 +732,9 @@ public class MessageManager {
       if (tags == null) {
         tags = new ArrayList<String>(0);
       }
+      if (!tags.isEmpty()) {
+        validateTags(tags);
+      }
     } else {
       validateTags(tags);
     }
@@ -777,5 +789,14 @@ public class MessageManager {
     } catch (IllegalArgumentException e) {
       throw new MMXException(e.getMessage(), StatusCode.BAD_REQUEST);
     }
+  }
+
+  /**
+   * @hide
+   * Return the ack statistics.
+   * @return The number of acks sent and number of acks encountered error.
+   */
+  public int[] getAckStat() {
+    return new int[] { mAckCounters, mAckErrors };
   }
 }

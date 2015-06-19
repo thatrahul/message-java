@@ -232,7 +232,7 @@ public class MMXTopicTagsResourceTest extends BaseJAXRSTest {
     //set tags
     {
       Response response = setTags(topicId, tagList);
-      assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
+      assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
       response.close();
     }
 
@@ -345,7 +345,7 @@ public class MMXTopicTagsResourceTest extends BaseJAXRSTest {
     TopicTagInfo topicTagInfo = gson.fromJson(jsonString, new TypeToken<TopicTagInfo>() {
     }.getType());
     LOGGER.trace("testSetGetTags : receivedJson=\n{}", topicTagInfo);
-    assertEquals(topicTagInfo.getTopicId(), topicId);
+    assertEquals(topicTagInfo.getTopicName(), topicId);
     assertTrue(topicTagInfo.getTags().containsAll(tags));
   }
 
@@ -354,13 +354,13 @@ public class MMXTopicTagsResourceTest extends BaseJAXRSTest {
     TopicTagInfo topicTagInfo = gson.fromJson(jsonString, new TypeToken<TopicTagInfo>() {
     }.getType());
     LOGGER.trace("testSetGetTags : receivedJson=\n{}", topicTagInfo);
-    assertEquals(topicTagInfo.getTopicId(), topicId);
+    assertEquals(topicTagInfo.getTopicName(), topicId);
     assertFalse(topicTagInfo.getTags().containsAll(tags));
   }
   private Set getSetFromTagInfoList(List<TopicTagInfo> topicTagInfos) {
     Set<String> topicIds = new HashSet<String>();
     for(TopicTagInfo tagInfo : topicTagInfos) {
-      topicIds.add(tagInfo.getTopicId());
+      topicIds.add(tagInfo.getTopicName());
     }
     return topicIds;
   }

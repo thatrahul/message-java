@@ -32,11 +32,13 @@ genLocalProps() {
       if [ "$iface" != "lo" ]; then
         IPADDR=`ip -f inet addr show "$iface" | grep inet | sed -e 's./. .' | awk '{ print $2 }'`
         if [ "$IPADDR" != "" ]; then
+          set +x
           echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
           echo "@"
           echo "@ Configure host=$IPADDR"
           echo "@"
           echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+          set -x
           sed -e "s/^host=[0-9.]*$/host=$IPADDR/" $1 > $2
           return
         fi

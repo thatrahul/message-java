@@ -59,4 +59,15 @@ public interface WakeupEntityDAO {
    */
   public void remove(int wakeupEntityId);
 
+
+  /**
+   * Get a list of WakeupEntity records that have been queued during the mute period.
+   * @param appId appId
+   * @param deviceEntity device entity
+   * @param mutePeriod in minutes
+   * @return List of WakeupEntity records. None if records don't exist.
+   */
+  public List<WakeupEntity> retrieveOpenOrSentWakeup(String appId, DeviceEntity deviceEntity, int mutePeriod);
+
+
 }

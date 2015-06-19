@@ -129,4 +129,62 @@ public class TestAppManagementAPI {
         .body("message", containsString("Supplied Google API Key is invalid"));
   }
 
+
+  @Test
+  public void test02AppCreateAndGetConfigurationAndDelete() {
+    AppCreateRequest request = new AppCreateRequest();
+    String name = "Configuration Test";
+    String ownerEmail = "tester@magnet.com";
+    String guestSecret = "supersecret";
+
+    request.setGuestSecret(guestSecret);
+    request.setName(name);
+    request.setOwnerEmail(ownerEmail);
+    request.setOwnerId(TestUtils.appOwner);
+    GsonBuilder builder = new GsonBuilder();
+    String payload = builder.create().toJson(request);
+
+    Response responsePost =
+        given().log().all().
+            authentication().preemptive().basic(TestUtils.user, TestUtils.pass).
+            contentType(TestUtils.JSON).
+            headers(TestUtils.toHeaders(TestUtils.mmxApiHeaders)).
+            body(payload).
+            when().
+            post(APP_RESOURCE);
+    LOGGER.info(responsePost.asString());
+
+    String appId = responsePost.then().
+        statusCode(201)
+        .body("name", equalTo(name))
+        .extract()
+        .path("appId");
+
+    Response configurationGetResponse =
+        given().log().all().
+            authentication().preemptive().basic(TestUtils.user, TestUtils.pass).
+            contentType(TestUtils.JSON).
+            headers(TestUtils.toHeaders(TestUtils.mmxApiHeaders)).
+            when().
+            get(APP_RESOURCE + "/" + appId + "/configurations");
+
+    LOGGER.info("configurationGetResponse: " + configurationGetResponse.asString());
+
+        configurationGetResponse.then().
+            body("get(0).key", equalTo("mmx.wakeup.mute.minutes")).
+            body("get(0).value", equalTo("30"));
+
+    Response responseDelete =
+        given().log().all().
+            authentication().preemptive().basic(TestUtils.user, TestUtils.pass).
+            contentType(TestUtils.JSON).
+            headers(TestUtils.toHeaders(TestUtils.mmxApiHeaders)).
+            when().
+            delete(APP_RESOURCE + "/" + appId);
+    LOGGER.info(responseDelete.asString());
+
+    responseDelete.then().
+        statusCode(200);
+  }
+
 }

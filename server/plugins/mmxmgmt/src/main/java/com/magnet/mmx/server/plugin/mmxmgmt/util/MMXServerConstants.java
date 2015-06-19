@@ -14,6 +14,8 @@
  */
 package com.magnet.mmx.server.plugin.mmxmgmt.util;
 
+import javax.ws.rs.Priorities;
+
 /**
  */
 public final class MMXServerConstants {
@@ -27,8 +29,8 @@ public final class MMXServerConstants {
   public static final String DEFAULT_EMAIL_PASSWORD = "At2Qas96wh2+afdRVylF0lhiwWnE/Zo/jl+Od49H5Exb";
   public static final String DEFAULT_ALERT_EMAIL_SUBJECT = "Usage limit exceeded";
   public static final String MAX_APP_LIMIT_BODY = "Reached maximum application limit of %d";
-  public static final String MAX_PUSH_RATE_BODY = "Reached maximum push message rate of %d messages per sec";
-  public static final String MAX_INAPP_RATE_BODY = "Reached maximum in-app message rate of %d messages per sec";
+  public static final String MAX_HTTP_RATE_EXCEEDED_EMAIL_BODY = "Reached maximum http message rate of %d messages per sec";
+  public static final String MAX_XMPP_RATE_EXCEEDED_EMAIL_BODY = "Reached maximum xmpp message rate of %d messages per sec";
   public static final String MAX_DEV_PER_APP_BODY = "Reached maximum device limit of %d";
   public static final int DEFAULT_TIMEOUT_MINUTES = 180;
   public static final int DEFAULT_RETRY_INTERVAL_MINUTES = 15;
@@ -40,8 +42,8 @@ public final class MMXServerConstants {
   public static final int DEFAULT_REST_HTTP_PORT = 5220;
   public static final int DEFAULT_MAX_APP_PER_OWNER = -1;
   public static final int DEFAULT_MAX_DEVICES_PER_APP = -1;
-  public static final int DEFAULT_MAX_INAPP_MSG_RATE = -1;
-  public static final int DEFAULT_MAX_PUSH_MSG_RATE = -1;
+  public static final int DEFAULT_MAX_XMPP_RATE = -1;
+  public static final int DEFAULT_MAX_HTTP_RATE = -1;
 
   public static final String PUSH_CALLBACK_CONTEXT = "/mmxmgmt";
   public static final String PUSH_CALLBACK_ENDPOINT = "/v1/pushreply";
@@ -128,4 +130,15 @@ public final class MMXServerConstants {
   public final static int MAX_TOPIC_DESCRIPTION_LEN = 255;
 
   public final static int MMX_MAX_PASSWORD_LEN = 32;
+
+  public final static int WAKEUP_MUTE_PERIOD_MINUTES_DEFAULT = 30;
+
+  public final static String HTTP_RATE_TYPE = "HTTP";
+  public final static String XMPP_RATE_TYPE = "XMPP";
+
+  /**
+   * check JAX-RS priorities, we need to make sure that this priority is right after
+   * authentication.
+   */
+  public final static int MMX_RATE_LIMIT_PRIORITY = Priorities.AUTHENTICATION + 1;
 }

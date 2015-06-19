@@ -15,6 +15,7 @@
 package com.magnet.mmx.server.api.v1;
 
 import com.magnet.mmx.server.common.data.AppEntity;
+import com.magnet.mmx.server.plugin.mmxmgmt.api.ErrorCode;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.ErrorResponse;
 import com.magnet.mmx.server.plugin.mmxmgmt.util.MMXServerConstants;
 
@@ -25,6 +26,8 @@ import javax.ws.rs.core.Response;
 /**
  */
 public class RestUtils {
+  private static String MISSING_HEADER = "Authentication failed : mandatory header %s is missing";
+  private static String INVALID_HEADER_VALUE = "Authentication failed : header %s has an invalid value %s";
 
   public static Response getJAXRSResp(Response.Status status, ErrorResponse errorResponse) {
     return Response.status(status).type(MediaType.APPLICATION_JSON).entity(errorResponse).build();
@@ -59,5 +62,21 @@ public class RestUtils {
       appEntity = (AppEntity)o;
     }
     return appEntity;
+  }
+
+  public static Response buildMissingHeaderResponse(String header) {
+    ErrorResponse mmxErrorResponse = new ErrorResponse(ErrorCode.AUTH_MISSING,
+            String.format(MISSING_HEADER, header));
+    Response httpErrorResponse = Response.status(Response.Status.UNAUTHORIZED)
+            .entity(mmxErrorResponse).build();
+    return httpErrorResponse;
+  }
+
+  public static Response buildInvalidHeaderResponse(ErrorCode code, String header, String value) {
+    ErrorResponse mmxErrorResponse = new ErrorResponse(code,
+            String.format(INVALID_HEADER_VALUE, header, value));
+    Response httpErrorResponse = Response.status(Response.Status.UNAUTHORIZED)
+            .entity(mmxErrorResponse).build();
+    return httpErrorResponse;
   }
 }

@@ -16,10 +16,10 @@ package com.magnet.mmx.server.plugin.mmxmgmt.event;
 
 /**
  */
-public class MMXInAppRateExceededEvent extends MMXAppEvent {
+public class MMXXmppRateExceededEvent extends MMXAppEvent {
   private int rate;
 
-  public MMXInAppRateExceededEvent(String appId, int rate) {
+  public MMXXmppRateExceededEvent(String appId, int rate) {
     super(appId);
     this.rate = rate;
   }
@@ -31,10 +31,10 @@ public class MMXInAppRateExceededEvent extends MMXAppEvent {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof MMXInAppRateExceededEvent)) return false;
+    if (!(o instanceof MMXXmppRateExceededEvent)) return false;
     if (!super.equals(o)) return false;
 
-    MMXInAppRateExceededEvent that = (MMXInAppRateExceededEvent) o;
+    MMXXmppRateExceededEvent that = (MMXXmppRateExceededEvent) o;
 
     if (rate != that.rate) return false;
 
@@ -50,7 +50,7 @@ public class MMXInAppRateExceededEvent extends MMXAppEvent {
 
   @Override
   public String toString() {
-    return "MMXInAppRateExceededEvent{" +
+    return "MMXXmppRateExceededEvent{" +
             "rate=" + rate +
             "} " + super.toString();
   }

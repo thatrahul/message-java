@@ -31,6 +31,7 @@ public class TopicHelper {
   private static boolean TOPIC_RESTRICTED_NAME = true;  // true for MOB-1423
   public final static char TOPIC_DELIM = '/';
   public final static char TOPIC_FOR_APP = '*';
+  public final static String TOPIC_FOR_APP_STR = String.valueOf(TOPIC_FOR_APP);
   public final static String TOPIC_GEOLOC = "com.magnet.geoloc";  // a leaf node
   public final static String TOPIC_OS_ROOT = "com.magnet.os";
   public final static String TOPIC_OS = TOPIC_OS_ROOT+"/";        // a collection node
@@ -182,8 +183,8 @@ public class TopicHelper {
    * and topic are null.  The path may be "appID", "/appID/*", "/appID/userID",
    * "/appID/*\u002atopic", or "/appID/userID/topic".
    * @param appId The app ID.
-   * @param userId A user ID or null.
-   * @param topic A topic name.
+   * @param userId A user ID for user topic or null for global topic.
+   * @param topic A topic name or null.
    * @return
    */
   public static String makeTopic(String appId, String userId, String topic) {

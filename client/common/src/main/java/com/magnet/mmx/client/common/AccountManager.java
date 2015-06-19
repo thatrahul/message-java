@@ -340,6 +340,9 @@ public class AccountManager {
       if (tags == null) {
         tags = new ArrayList<String>(0);
       }
+      if (!tags.isEmpty()) {
+        validateTags(tags);
+      }
     } else {
       validateTags(tags);
     }

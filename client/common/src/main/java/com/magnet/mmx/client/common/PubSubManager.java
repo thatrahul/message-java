@@ -21,7 +21,9 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.jivesoftware.smack.XMPPException.XMPPErrorException;
 import org.jivesoftware.smack.packet.XMPPError;
@@ -56,6 +58,7 @@ import com.magnet.mmx.protocol.TopicAction.DeleteRequest;
 import com.magnet.mmx.protocol.TopicAction.FetchOptions;
 import com.magnet.mmx.protocol.TopicAction.FetchRequest;
 import com.magnet.mmx.protocol.TopicAction.FetchResponse;
+import com.magnet.mmx.protocol.TopicAction.ItemsByIdsRequest;
 import com.magnet.mmx.protocol.TopicAction.ListType;
 import com.magnet.mmx.protocol.TopicAction.MMXPublishedItem;
 import com.magnet.mmx.protocol.TopicAction.PublisherType;
@@ -163,7 +166,6 @@ public class PubSubManager {
   private synchronized org.jivesoftware.smackx.pubsub.PubSubManager getPubSubManager() {
     if (mPubSubMgr == null) {
       mPubSubMgr = new org.jivesoftware.smackx.pubsub.PubSubManager(mCon.getXMPPConnection());
-      mBuffer = mapDeliveryLogFile();
     }
     return mPubSubMgr;
   }
@@ -289,6 +291,49 @@ public class PubSubManager {
       return itemId;
     } else {
       throw new MMXException("Cannot publish to topic because not connected.");
+    }
+  }
+
+  /**
+   * Get published items by their ID's.
+   * @param topic A topic object.
+   * @param itemIds A list of published item ID's.
+   * @return A Map of item ID's and published items.
+   * @throws TopicNotFoundException
+   * @throws TopicPermissionException
+   * @throws MMXException
+   */
+  public Map<String, MMXMessage> getItemsByIds(MMXTopic topic, List<String> itemIds)
+        throws TopicNotFoundException, TopicPermissionException, MMXException {
+    if (topic instanceof MMXPersonalTopic) {
+      ((MMXPersonalTopic) topic).setUserId(mCon.getUserId());
+    }
+    String topicPath = TopicHelper.normalizePath(topic.getName());
+    ItemsByIdsRequest rqt = new ItemsByIdsRequest(topic.getUserId(), topicPath, itemIds);
+    PubSubIQHandler<ItemsByIdsRequest, FetchResponse> iqHandler =
+        new PubSubIQHandler<ItemsByIdsRequest, FetchResponse>();
+    try {
+      iqHandler.sendGetIQ(mCon, Constants.PubSubCommand.getItems.toString(),
+          rqt, FetchResponse.class, iqHandler);
+      FetchResponse resp = iqHandler.getResult();
+      Map<String, MMXMessage> msgs = new HashMap<String, MMXMessage>(resp.getItems().size());
+      XmlPullParser parser = PacketParserUtils.newXmppParser();
+      for (MMXPublishedItem item : resp.getItems()) {
+        MMXPacketExtension mmxExt = MMXPayloadMsgHandler.parse(parser, item.getPayloadXml());
+        MMXMessage msg = new MMXMessage(item.getItemId(), item.getPublisher(),
+            null, mmxExt.getPayload());
+        msgs.put(item.getItemId(), msg);
+      }
+      return msgs;
+    } catch (MMXException e) {
+      if (e.getCode() == StatusCode.NOT_FOUND) {
+        throw new TopicNotFoundException(e.getMessage());
+      } else if (e.getCode() == StatusCode.FORBIDDEN) {
+        throw new TopicPermissionException(e.getMessage());
+      }
+      throw e;
+    } catch (Throwable e) {
+      throw new MMXException(e.getMessage(), e);
     }
   }
 
@@ -970,7 +1015,8 @@ public class PubSubManager {
 
   boolean saveLastDelivery(Date lastDeliveryTime) {
     if (mBuffer == null) {
-      return false;
+      // Delay initializing mBuffer until mCon is connected.
+      mBuffer = mapDeliveryLogFile();
     }
     mBuffer.position(0);
     mBuffer.putLong(lastDeliveryTime.getTime());
@@ -981,7 +1027,8 @@ public class PubSubManager {
 
   Date getLastDelivery() {
     if (mBuffer == null) {
-      return new Date(0L);
+      // Delay initializing mBuffer until mCon is connected.
+      mBuffer = mapDeliveryLogFile();
     }
     mBuffer.position(0);
     long lastDeliveryTime = mBuffer.getLong();
@@ -1132,6 +1179,9 @@ public class PubSubManager {
     if (cmd == PubSubCommand.setTags) {
       if (tags == null) {
         tags = new ArrayList<String>(0);
+      }
+      if (!tags.isEmpty()) {
+        validateTags(tags);
       }
     } else {
       validateTags(tags);

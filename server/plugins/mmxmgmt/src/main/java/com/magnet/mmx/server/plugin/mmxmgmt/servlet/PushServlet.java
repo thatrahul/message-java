@@ -16,14 +16,7 @@ package com.magnet.mmx.server.plugin.mmxmgmt.servlet;
 
 import com.google.common.base.Strings;
 import com.magnet.mmx.protocol.Constants;
-import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXPushMessageRateExceededEvent;
-import com.magnet.mmx.server.plugin.mmxmgmt.monitoring.RateLimiterService;
-import com.magnet.mmx.server.plugin.mmxmgmt.push.MMXWakeupPayload;
-import com.magnet.mmx.server.plugin.mmxmgmt.push.PushMessageSender;
-import com.magnet.mmx.server.plugin.mmxmgmt.push.PushRequest;
-import com.magnet.mmx.server.plugin.mmxmgmt.push.PushResult;
-import com.magnet.mmx.server.plugin.mmxmgmt.push.PushSender;
-import com.magnet.mmx.server.plugin.mmxmgmt.util.*;
+import com.magnet.mmx.server.plugin.mmxmgmt.push.*;
 import com.magnet.mmx.server.plugin.mmxmgmt.web.BasicResponse;
 import com.magnet.mmx.util.GsonData;
 import org.jivesoftware.admin.AuthCheckFilter;
@@ -34,11 +27,7 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 
 /**
  * Servlet that handles requests for pushing messages via GCM/APNS to a device id
@@ -83,12 +72,6 @@ public class PushServlet extends AbstractSecureServlet {
 
     if(Strings.isNullOrEmpty(pingType))
       pingType = Constants.PingPongCommand.ping.name();
-
-    if(!RateLimiterService.getPushPermit()) {
-      AlertEventsManager.post(new MMXPushMessageRateExceededEvent(appId, AlertsUtil.getMaxPushRate()));
-      response.sendError(400, "Push message rate exceeded : " + MMXConfiguration.getConfiguration().getLong(MMXConfigKeys.MAX_PUSH_MESSAGE_RATE, -1));
-      return;
-    }
 
     //TODO: Refactor this
     PushSender sender = new PushMessageSender();

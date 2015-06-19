@@ -29,12 +29,12 @@ public class PropertyChangeHandler {
     if(Strings.isNullOrEmpty(property)) {
       return;
     }
-    if (property.equals(MMXConfigKeys.MAX_INAPP_MESSAGE_RATE)) {
-      int rate = MMXConfiguration.getConfiguration().getInt(MMXConfigKeys.MAX_INAPP_MESSAGE_RATE, MMXServerConstants.DEFAULT_MAX_INAPP_MSG_RATE);
-      RateLimiterService.setInAppMsgRate(rate);
-    } else if(property.equals(MMXConfigKeys.MAX_PUSH_MESSAGE_RATE)) {
-      int rate = MMXConfiguration.getConfiguration().getInt(MMXConfigKeys.MAX_PUSH_MESSAGE_RATE, MMXServerConstants.DEFAULT_MAX_PUSH_MSG_RATE);
-      RateLimiterService.setPushMsgRate(rate);
+    if (property.equals(MMXConfigKeys.MAX_XMPP_RATE)) {
+      int rate = MMXConfiguration.getConfiguration().getInt(MMXConfigKeys.MAX_XMPP_RATE, MMXServerConstants.DEFAULT_MAX_XMPP_RATE);
+      RateLimiterService.updateRates(MMXServerConstants.XMPP_RATE_TYPE, rate);
+    } else if(property.equals(MMXConfigKeys.MAX_HTTP_RATE)) {
+      int rate = MMXConfiguration.getConfiguration().getInt(MMXConfigKeys.MAX_HTTP_RATE, MMXServerConstants.DEFAULT_MAX_HTTP_RATE);
+      RateLimiterService.updateRates(MMXServerConstants.HTTP_RATE_TYPE, rate);
     } else if (MMXConfigKeys.EXT_SERVICE_EVENT_GEO_SECRET.equals(property)) {
       // update the secret for geo component
       // TODO add proper Rest API to configure components

@@ -32,6 +32,7 @@ import java.util.concurrent.locks.Lock;
 /**
  * Processor that checks for messages that we need to retry sending wakeup notifications
  * for.
+ * TODO: This is no longer being used. Will be removed soon.
  */
 public class RetryProcessor extends MMXClusterableTask implements Runnable {
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryProcessor.class.getName());

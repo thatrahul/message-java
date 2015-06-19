@@ -14,6 +14,7 @@
  */
 package com.magnet.mmx.server.plugin.mmxmgmt.message;
 
+import com.magnet.mmx.protocol.MMXTopicId;
 import com.magnet.mmx.server.common.data.AppEntity;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.ErrorCode;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.ErrorMessages;
@@ -36,6 +37,7 @@ import com.magnet.mmx.server.plugin.mmxmgmt.db.UserDAOImpl;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.UserEntity;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.UserTargetResolver;
 import com.magnet.mmx.server.plugin.mmxmgmt.handler.MMXTopicManager;
+import com.magnet.mmx.server.plugin.mmxmgmt.servlet.TopicResource;
 import com.magnet.mmx.server.plugin.mmxmgmt.topic.TopicPostMessageRequest;
 import com.magnet.mmx.server.plugin.mmxmgmt.util.Helper;
 import com.magnet.mmx.server.plugin.mmxmgmt.util.JIDUtil;
@@ -291,7 +293,9 @@ public class MessageSenderImpl implements MessageSender {
         return result;
       }
 
-      String topicId = TopicHelper.makeTopic(appId, null, topicName);
+      // TODO: hack for MOB-2516 that user topic is shown as "userID/topicName"
+      MMXTopicId tid = TopicResource.nameToId(topicName);
+      String topicId = TopicHelper.makeTopic(appId, tid.getUserId(), tid.getName());
       //ok validated.
       TopicMessageBuilder builder = new TopicMessageBuilder();
       builder.setAppEntity(validationResult.getAppEntity())
@@ -434,7 +438,9 @@ public class MessageSenderImpl implements MessageSender {
       result.setValid(false, ERROR_INVALID_POST_MESSAGE_TOPIC);
       return result;
     }
-    String topicId = TopicHelper.makeTopic(appId, null, topicName);
+    // TODO: hack for MOB-2516 that user topic is shown as "userID/topicName".
+    MMXTopicId tid = TopicResource.nameToId(topicName);
+    String topicId = TopicHelper.makeTopic(appId, tid.getUserId(), tid.getName());
     Node topic = topicManager.getTopicNode(topicId);
     if (topic == null) {
       ValidationResult result = new ValidationResult();

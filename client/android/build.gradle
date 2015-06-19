@@ -13,14 +13,21 @@ repositories {
 
     mavenCentral()
 
-    maven { url "https://repo.magnet.com/artifactory/public" }
+    maven {
+        url "http://dev-repo.magnet.com:8081/artifactory/everything"
+        credentials {
+            username = "${devUser}"
+            password = "${devPassword}"
+        }
+    }
 }
 
+//apply plugin: 'android-sdk-manager'
 apply plugin: 'com.android.library'
 apply plugin: 'maven'
 
 archivesBaseName = 'magnet-mmx-client-android'
-version = "1.0.1"
+version = "1.0.2"
 group = "com.magnet.mmx"
 
 task wrapper(type: Wrapper) {
@@ -46,13 +53,13 @@ sourceSets {
 
 dependencies {
     compile 'com.google.code.gson:gson:2.3'
-    compile fileTree(dir: 'libs', include: ['*.jar'])
 
      // this gets resolved from the Android SDK install of google play services
      // and doesn't work on Jenkins currently.
     compile 'com.google.android.gms:play-services-base:6.5.+'
     compile 'com.google.android.gms:play-services-location:6.5.+'
 
+//    compile 'com.google.android.gms:google-play-services:7'  // get it from maven
     compile 'com.android.support:support-v4:19.1.0'
     compile 'com.magnet.mmx.ext:mmx-asmack-android-8:4.0.7'
     compile 'com.magnet.mmx.ext:mmx-dnsjava:2.1.6'
@@ -139,14 +146,18 @@ task androidJavadocs(type: Javadoc) {
     include '**/MMXPayload.java'
     include '**/MMXErrorMessage.java'
     include '**/MMXMessage.java'
+    include '**/MMXMessageStatus.java'
     include '**/MMXStatus.java'
     include '**/TopicOptions.java'
     include '**/TopicAction.java'
+    include '**/MMXError.java'
     include '**/MMXGlobalTopic.java'
     include '**/MMXVisibleTopic.java'
+    include '**/MMXTopicId.java'
     include '**/MMXTopic.java'
     include '**/MMXTopicInfo.java'
     include '**/MMXTopicOptions.java'
+    include '**/MMXTopicSearchResult.java'
     include '**/MMXSubscription.java'
     include '**/TopicSummary.java'
     include '**/TopicNotFoundException.java'
@@ -157,7 +168,10 @@ task androidJavadocs(type: Javadoc) {
     include '**/MMXDeviceManager.java'
     include '**/MMXMessageManager.java'
     include '**/TypeMapper.java'
+    include '**/DevTags.java'
+    include '**/DevList.java'
     include '**/UserQuery.java'
+    include '**/UserTags.java'
     include '**/DisposableTextFile.java'
     include '**/DisposableBinFile.java'
     include '**/DisposableFile.java'
@@ -274,6 +288,10 @@ def releaseZipfile = file("${projectDir}/build/distributions/${archivesBaseName}
 def sdkAarfile = file("${projectDir}/build/outputs/aar/${archivesBaseName}-${version}.aar")
 
 artifacts {
+//    archives debugJarfile
+//    archives releaseJarfile
+//    archives debugZipfile
+//    archives releaseZipfile
     archives sdkAarfile
 }
 
@@ -288,5 +306,22 @@ task uploadLocal(type: Upload) {
    }
 }
 
+task uploadRelease(type: Upload) {
+    configuration = configurations.archives
+    repositories.mavenDeployer {
+        repository(url: "http://dev-repo.magnet.com:8081/artifactory/libs-release-local") {
+            authentication(userName: "${releaseUser}", password: "${releasePassword}")
+        }
+    }
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        configuration = configurations.deployerJars
+        snapshotRepository(url: "http://dev-repo.magnet.com:8081/artifactory/libs-snapshot-local") {
+            authentication(userName: "${devUser}", password: "${devPassword}")
+        }
+    }
+}
 
 

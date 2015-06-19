@@ -21,6 +21,7 @@ public interface MMXConfigKeys {
 
   public static final String WAKEUP_INITIAL_WAIT_KEY = "mmx.wakeup.initialwait";
   public static final String WAKEUP_FREQUENCY_KEY = "mmx.wakeup.frequency";
+  public static final String WAKEUP_MUTE_PERIOD_MINUTES = "mmx.wakeup.mute.minutes";
 
   public static final String SMTP_HOSTNAME_KEY = "mmx.smtp.hostname";
   public static final String SMTP_PORT_KEY = "mmx.smtp.port";
@@ -80,13 +81,13 @@ public interface MMXConfigKeys {
   public static final String MAX_DEVICES_PER_APP = "mmx.cluster.max.devices.per.app";
   public static final String MAX_DEVICES_PER_USER = "mmx.cluster.max.devices.per.user";
   public static final String MAX_APP_PER_OWNER = "mmx.cluster.max.apps";
-  public static final String MAX_INAPP_MESSAGE_RATE = "mmx.instance.max.inapp.message.rate.per.sec";
-  public static final String MAX_PUSH_MESSAGE_RATE = "mmx.instance.max.push.message.rate.per.sec";
+  public static final String MAX_XMPP_RATE = "mmx.instance.max.xmpp.rate.per.sec";
+  public static final String MAX_HTTP_RATE = "mmx.instance.max.http.rate.per.sec";
+  public static final String ALERT_EMAIL_SUBJECT = "mmx.alert.email.subject";
   public static final String ALERT_EMAIL_HOST="mmx.alert.email.host";
   public static final String ALERT_EMAIL_PORT="mmx.alert.email.port";
   public static final String ALERT_EMAIL_USER="mmx.alert.email.user";
   public static final String ALERT_EMAIL_PASSWORD="mmx.alert.email.password";
-  public static final String ALERT_EMAIL_SUBJECT="mmx.alert.email.subject";
   public static final String ALERT_EMAIL_BCC_LIST = "mmx.alert.email.bcc.list";
   public static final String ALERT_EMAIL_ENABLED = "mmx.alert.email.enabled";
 

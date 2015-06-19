@@ -3,7 +3,7 @@ Build Instructions for Magnet Messaging Server
 
 Build environment:
 - Java 1.7.x SDK
-- Maven 3.2.3+
+- Maven 3.2.3+, but below Maven 3.3.1
 - Verified on Ubuntu 14.0.4 and Mac OSX Yosemite
 - MySQL 5.6 (for unit tests)
 
@@ -22,10 +22,10 @@ https://github.com/magnetsystems/message-java
 You can find the messaging server zip file under “tools/mmx-server-zip/target”
 
 3. Run the server:
-- unzip “mmx-server-1.0.1.zip”
-- Edit “mmx-server-1.0.1/conf/startup.properties
+- unzip “mmx-server-1.0.2.zip”
+- Edit “mmx-server-1.0.2/conf/startup.properties
 - Start the server: 
-  % cd ./mmx-server-1.0.1/bin
+  % cd ./mmx-server-1.0.2/bin
   % ./mmx-server.sh start
  
 

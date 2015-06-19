@@ -14,6 +14,7 @@
  */
 package com.magnet.mmx.server.plugin.mmxmgmt.monitoring;
 
+import com.magnet.mmx.server.plugin.mmxmgmt.util.MMXServerConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +39,9 @@ public class RateLimiterServiceTest {
   final AtomicInteger pushSuccess = new AtomicInteger(0);
   final AtomicInteger pushFailure = new AtomicInteger(0);
 
-  public void testMessageRatesBurst() {
+  public void testMessageRatesBurst() throws Exception {
     resetCounters();
+    String appId = "test";
     final long testDuration = 10L;
      /*
      * Cap 100 permits per second
@@ -49,30 +51,30 @@ public class RateLimiterServiceTest {
     /**
      *  Attempted burst
      */
-    final int burst = 100;
+    final int attemptedRate = 100;
 
-    final double expFailPercent = (burst - cappedRateLimit) * 100.0 / (double)burst;
+    final long period =  1000L / attemptedRate;
 
-    RateLimiterService.init();
+    final double expFailPercent = (attemptedRate - cappedRateLimit) * 100.0 / (double)attemptedRate;
 
-    RateLimiterService.setInAppMsgRate(cappedRateLimit);
-    RateLimiterService.setPushMsgRate(cappedRateLimit);
+    final RateLimiterDescriptor inApp = new RateLimiterDescriptor(MMXServerConstants.XMPP_RATE_TYPE, appId, cappedRateLimit);
+    final RateLimiterDescriptor push = new RateLimiterDescriptor(MMXServerConstants.HTTP_RATE_TYPE, appId, cappedRateLimit);
 
     ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-    final ScheduledExecutorService msgExecutor = Executors.newScheduledThreadPool(burst);
+    final ScheduledExecutorService msgExecutor = Executors.newScheduledThreadPool(attemptedRate);
 
     ScheduledFuture<?> rateLimitFuture = executor.scheduleAtFixedRate(new Runnable() {
       @Override
       public void run() {
-        for (int i = 0; i < burst; i++) {
+        for (int i = 0; i < attemptedRate; i++) {
           msgExecutor.submit(new Runnable() {
             @Override
             public void run() {
-              if (RateLimiterService.getInAppPermit())
+              if (RateLimiterService.isAllowed(inApp))
                 inAppSuccess.incrementAndGet();
               else
                 inAppFailure.incrementAndGet();
-              if (RateLimiterService.getPushPermit())
+              if (RateLimiterService.isAllowed(push))
                 pushSuccess.incrementAndGet();
               else
                 pushFailure.incrementAndGet();
@@ -80,7 +82,7 @@ public class RateLimiterServiceTest {
           });
         }
       }
-    }, 0L, 10, TimeUnit.SECONDS);
+    }, 0L, period, TimeUnit.SECONDS);
 
     List<ScheduledFuture<?>> list = new ArrayList<ScheduledFuture<?>>();
     list.add(rateLimitFuture);
@@ -91,18 +93,19 @@ public class RateLimiterServiceTest {
     LOGGER.trace("testMessageRates : calculatePushFailure={}, expectedPushFailure={}", getPushFailure(), expFailPercent);
   }
 
-  public void testMessageRates() {
+  public void testMessageRates() throws Exception {
+    String appId = "test";
     ScheduledFuture<?> inAppFuture;
     ScheduledFuture<?> pushFuture;
     resetCounters();
 
     /*
-     * Cap 100 permits per second
+     * Cap permits per second
      */
     final int cappedRateLimit = 50;
 
     /**
-     * Attempt 200 permits per second
+     * Attempted permits per second
      */
     final int attemptedRate = 55;
 
@@ -113,32 +116,34 @@ public class RateLimiterServiceTest {
     final double expFailPercent = round(((attemptedRate - cappedRateLimit) * 100.0) / (double) attemptedRate);
 
     /**
-     * Run the test for 5 minutes;
+     * Run the test for X minutes;
      */
     final long testDuration = 10L;
 
-
     final long period = 1000L / attemptedRate;
 
+    LOGGER.debug("testMessageRates : cappedRate={}, attemptedRate={},expFailPercent={}%", new Object[]{
+            cappedRateLimit, attemptedRate, expFailPercent
+    });
+    
+            
     ScheduledExecutorService inAppExecutor = Executors.newSingleThreadScheduledExecutor();
     ScheduledExecutorService pushExecutor = Executors.newSingleThreadScheduledExecutor();
     ScheduledExecutorService stopTestExecutor = Executors.newSingleThreadScheduledExecutor();
 
-    RateLimiterService.init();
-
-    RateLimiterService.setInAppMsgRate(cappedRateLimit);
-    RateLimiterService.setPushMsgRate(cappedRateLimit);
+    final RateLimiterDescriptor inApp = new RateLimiterDescriptor(MMXServerConstants.XMPP_RATE_TYPE, appId, cappedRateLimit);
+    final RateLimiterDescriptor push = new RateLimiterDescriptor(MMXServerConstants.HTTP_RATE_TYPE, appId, cappedRateLimit);
 
     /**
-     * Try getting a permit every 200 times a second. I.e in 1 minute (1000 milliseconds) try acquiring a permit
-     * every 5 milliseconds; And run this test for 2 minutes
+     * Try getting a permit every "period" times a second. I.e in 1 minute (1000 milliseconds) try acquiring a permit
+     * every 1000/period milliseconds; And run this test for 2 minutes
      *
      */
 
     inAppFuture = inAppExecutor.scheduleAtFixedRate(new Runnable() {
 
       public void run() {
-        if (RateLimiterService.getInAppPermit())
+        if (RateLimiterService.isAllowed(inApp))
           inAppSuccess.incrementAndGet();
         else
           inAppFailure.incrementAndGet();
@@ -148,7 +153,7 @@ public class RateLimiterServiceTest {
     pushFuture = pushExecutor.scheduleAtFixedRate(new Runnable() {
 
       public void run() {
-        if (RateLimiterService.getPushPermit())
+        if (RateLimiterService.isAllowed(push))
           pushSuccess.incrementAndGet();
         else
           pushFailure.incrementAndGet();

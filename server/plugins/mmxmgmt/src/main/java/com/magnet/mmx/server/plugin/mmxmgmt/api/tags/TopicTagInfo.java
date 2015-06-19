@@ -22,23 +22,23 @@ import java.util.List;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TopicTagInfo {
-  private String topicId;
+  private String topicName;
   private List<String> tags;
 
   public TopicTagInfo() {
   }
 
-  public TopicTagInfo(String topicId, List<String> tags) {
-    this.topicId = topicId;
+  public TopicTagInfo(String topicName, List<String> tags) {
+    this.topicName = topicName;
     this.tags = tags;
   }
 
-  public String getTopicId() {
-    return topicId;
+  public String getTopicName() {
+    return topicName;
   }
 
-  public void setTopicId(String topicId) {
-    this.topicId = topicId;
+  public void setTopicName(String topicName) {
+    this.topicName = topicName;
   }
 
   public List<String> getTags() {
@@ -57,14 +57,14 @@ public class TopicTagInfo {
     TopicTagInfo that = (TopicTagInfo) o;
 
     if (tags != null ? !tags.equals(that.tags) : that.tags != null) return false;
-    if (topicId != null ? !topicId.equals(that.topicId) : that.topicId != null) return false;
+    if (topicName != null ? !topicName.equals(that.topicName) : that.topicName != null) return false;
 
     return true;
   }
 
   @Override
   public int hashCode() {
-    int result = topicId != null ? topicId.hashCode() : 0;
+    int result = topicName != null ? topicName.hashCode() : 0;
     result = 31 * result + (tags != null ? tags.hashCode() : 0);
     return result;
   }

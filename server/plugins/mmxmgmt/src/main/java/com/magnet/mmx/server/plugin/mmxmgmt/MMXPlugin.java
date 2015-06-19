@@ -15,15 +15,14 @@
 
 package com.magnet.mmx.server.plugin.mmxmgmt;
 
-import com.magnet.mmx.lockout.MmxLockoutProvider;
 import com.magnet.mmx.server.plugin.mmxmgmt.apns.APNSConnectionPoolImpl;
 import com.magnet.mmx.server.plugin.mmxmgmt.apns.APNSFeedbackProcessExecutionManager;
 import com.magnet.mmx.server.plugin.mmxmgmt.context.ContextDispatcherFactory;
 import com.magnet.mmx.server.plugin.mmxmgmt.context.GeoEventDispatcher;
 import com.magnet.mmx.server.plugin.mmxmgmt.context.IContextDispatcher;
 import com.magnet.mmx.server.plugin.mmxmgmt.handler.*;
+import com.magnet.mmx.server.plugin.mmxmgmt.interceptor.MMXMessageHandlingRule;
 import com.magnet.mmx.server.plugin.mmxmgmt.interceptor.MMXPacketInterceptor;
-import com.magnet.mmx.server.plugin.mmxmgmt.monitoring.RateLimiterService;
 import com.magnet.mmx.server.plugin.mmxmgmt.util.*;
 import com.magnet.mmx.server.plugin.mmxmgmt.wakeup.*;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
@@ -80,7 +79,6 @@ public class MMXPlugin implements Plugin, ClusterEventListener {
 
   private MMXPacketInterceptor mmxPacketInterceptor;
   private WakeupExecutionManager wakeupExecutionManager = null;
-  private RetryCheckExecutionManager retryCheckExecutionManager = null;
   private TimeoutExecutionManager timeoutExecutionManager = null;
   private APNSFeedbackProcessExecutionManager apnsFeedbackProcessExecutionManager = null;
 
@@ -103,11 +101,7 @@ public class MMXPlugin implements Plugin, ClusterEventListener {
 
     {
       try {
-        JiveGlobals.setProperty("xmpp.auth.anonymous", "false");
-        JiveGlobals.setProperty("register.inband", "false");
-        JiveGlobals.setProperty("xmpp.server.socket.active", "false");
         JiveGlobals.setProperty(MMXConfigKeys.MMX_VERSION, MMXVersion.getVersion());
-        JiveGlobals.setProperty("provider.lockout.className", MmxLockoutProvider.class.getName());
         Log.debug("mmx properties updated");
       } catch (Exception e) {
         Log.error("Problem in reading java properties", e);
@@ -150,11 +144,12 @@ public class MMXPlugin implements Plugin, ClusterEventListener {
     mIQUserRegHandler = new MMXUserHandler("userreg");
     mIQMessageStateHandler = new MessageStateHandler("msgstate");
     mIQPubSubHandler = new MMXPubSubHandler("pubsub");
+
     mIQWakeupNSHandler = new MMXWakeupNSHandler("wakeupns");
     mIQPushNSHandler = new MMXPushNSHandler("pushns");
     mIQMsgAckNSHandler = new MsgAckIQHandler("msgack");
 
-    mmxPacketInterceptor = new MMXPacketInterceptor();
+    mmxPacketInterceptor = new MMXPacketInterceptor(new MMXMessageHandlingRule());
 
     iqRouter.addHandler(mIQAppRegHandler);
     iqRouter.addHandler(mIQDevRegHandler);
@@ -182,8 +177,6 @@ public class MMXPlugin implements Plugin, ClusterEventListener {
     publicAPIServer = new MMXPublicAPIServer();
     publicAPIServer.start();
 
-    RateLimiterService.init();
-
     //initialize the APNS connection pool.
     initializeAPNSConnectionPool();
 
@@ -205,7 +198,6 @@ public class MMXPlugin implements Plugin, ClusterEventListener {
     iqRouter.removeHandler(mIQMsgAckNSHandler);
     InterceptorManager.getInstance().removeInterceptor(mmxPacketInterceptor);
     wakeupExecutionManager.stopWakeupExecution();
-    retryCheckExecutionManager.stopRetryCheck();
     timeoutExecutionManager.stopTimeoutCheck();
 
     // shutdown geo event dispatcher
@@ -235,7 +227,6 @@ public class MMXPlugin implements Plugin, ClusterEventListener {
     final int initialDelay = MMXConfiguration.getConfiguration().getInt(MMXConfigKeys.WAKEUP_INITIAL_WAIT_KEY, MMXServerConstants.DEFAULT_WAKEUP_INITIAL_WAIT);
     try {
       startWakeupTask(frequency, initialDelay);
-      startRetryTask(frequency, initialDelay);
       startTimeoutExecutionTask(frequency, initialDelay);
       startApnsFeedbackProcess();
     } catch (Exception e) {
@@ -289,12 +280,6 @@ public class MMXPlugin implements Plugin, ClusterEventListener {
       Log.warn("Exception in starting wakeup task", e);
       throw e;
     }
-  }
-
-  private void startRetryTask(int frequency, int initialDelay) {
-    Log.trace("startRetryTask : frequency={}, initialDelay={}", frequency, initialDelay);
-    retryCheckExecutionManager = new RetryCheckExecutionManagerImpl();
-    retryCheckExecutionManager.startRetryCheck(initialDelay + 20, frequency);
   }
 
   private void startTimeoutExecutionTask(int frequency, int initialDelay) {

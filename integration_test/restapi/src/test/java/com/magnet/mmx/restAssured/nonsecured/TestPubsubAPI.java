@@ -168,7 +168,7 @@ public class TestPubsubAPI extends TestCase {
                         post("/topics/testTopic4/publish");
 
         System.out.println("^^^^ response from responsePublishMessagePost: " + responsePublishMessagePost.asString());
-        String itemId = responsePublishMessagePost.then().
+        String messageId = responsePublishMessagePost.then().
                 statusCode(200).
                 assertThat().body("status", equalTo("OK")).
                 extract().path("messageId").toString();
@@ -186,15 +186,30 @@ public class TestPubsubAPI extends TestCase {
                 assertThat().body("topics.any {it.publishedItemCount >= 1}", is(true));
 
         // List published items count
-        given().log().all().
+        Response itemsResponse = given().log().all().
                 authentication().preemptive().basic(TestUtils.user, TestUtils.pass).
                 contentType(TestUtils.JSON).
                 headers(TestUtils.toHeaders(TestUtils.mmxApiHeaders)).
         when().log().all().
-                get("topics/testTopic4/items").
-        then().log().all().
+                get("topics/testTopic4/items");
+
+        itemsResponse.then().
                 statusCode(200).
                 assertThat().body("totalCount >= 1", is(true));
+
+        String itemId = itemsResponse.then().extract()
+                        .path("items[0].itemId");
+
+      Response responseGetItemsByIdResponse =
+          given().log().all().
+              authentication().preemptive().basic(TestUtils.user, TestUtils.pass).
+              contentType(TestUtils.JSON).
+              headers(TestUtils.toHeaders(TestUtils.mmxApiHeaders)).
+              param("id", itemId).
+              then().log().all().
+              get("/topics/testTopic4/items/byids");
+
+      responseGetItemsByIdResponse.then().statusCode(200);
     }
 
   @Test

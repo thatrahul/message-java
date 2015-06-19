@@ -48,12 +48,12 @@ public class AlertsUtil {
     return false;
   }
 
-  public static int getMaxInAppRate() {
-    return get(MMXConfigKeys.MAX_INAPP_MESSAGE_RATE, MMXServerConstants.DEFAULT_MAX_INAPP_MSG_RATE);
+  public static int getMaxXmppRate() {
+    return get(MMXConfigKeys.MAX_XMPP_RATE, MMXServerConstants.DEFAULT_MAX_XMPP_RATE);
   }
 
-  public static int getMaxPushRate() {
-    return get(MMXConfigKeys.MAX_PUSH_MESSAGE_RATE, MMXServerConstants.DEFAULT_MAX_PUSH_MSG_RATE);
+  public static int getMaxHttpRate() {
+    return get(MMXConfigKeys.MAX_HTTP_RATE, MMXServerConstants.DEFAULT_MAX_HTTP_RATE);
   }
 
   public static int getMaxAppLimit() {

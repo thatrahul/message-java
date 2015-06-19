@@ -37,8 +37,8 @@ public class AlertEventsManager {
   
   private static Lock queuesLock = new ReentrantLock();
 
-  public static EvictingQueue<MMXInAppRateExceededEvent> inAppEventQueue =  EvictingQueue.<MMXInAppRateExceededEvent>create(10);
-  public static EvictingQueue<MMXPushMessageRateExceededEvent> pushEventQueue = EvictingQueue.<MMXPushMessageRateExceededEvent>create(10);
+  public static EvictingQueue<MMXXmppRateExceededEvent> inAppEventQueue =  EvictingQueue.<MMXXmppRateExceededEvent>create(10);
+  public static EvictingQueue<MMXHttpRateExceededEvent> pushEventQueue = EvictingQueue.<MMXHttpRateExceededEvent>create(10);
   public static EvictingQueue<MMXMaxAppLimitReachedEvent> appLimitEventQueue = EvictingQueue.<MMXMaxAppLimitReachedEvent>create(10);
   public static EvictingQueue<MMXMaxDevicesPerAppLimitReachedEvent> devicesLimitQueue = EvictingQueue.<MMXMaxDevicesPerAppLimitReachedEvent>create(10);
 
@@ -47,10 +47,10 @@ public class AlertEventsManager {
     if (queuesLock.tryLock()) {
       try {
         LOGGER.trace("post : acquired lock event={}", event);
-        if(event instanceof MMXInAppRateExceededEvent) {
-          inAppEventQueue.add((MMXInAppRateExceededEvent)event);
-        } else if(event instanceof MMXPushMessageRateExceededEvent) {
-          pushEventQueue.add((MMXPushMessageRateExceededEvent) event);
+        if(event instanceof MMXXmppRateExceededEvent) {
+          inAppEventQueue.add((MMXXmppRateExceededEvent)event);
+        } else if(event instanceof MMXHttpRateExceededEvent) {
+          pushEventQueue.add((MMXHttpRateExceededEvent) event);
         } else if (event instanceof MMXMaxAppLimitReachedEvent) {
           appLimitEventQueue.add((MMXMaxAppLimitReachedEvent) event);
         } else if(event instanceof MMXMaxDevicesPerAppLimitReachedEvent) {

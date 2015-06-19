@@ -366,6 +366,47 @@ public class TopicAction {
 
   /**
    * @hide
+   * A request to access published items by ID's.
+   */
+  public static class ItemsByIdsRequest extends JSONifiable {
+    @SerializedName("userId")
+    private String mUserId;
+    @SerializedName("topicName")
+    private String mTopic;
+    @SerializedName("itemIds")
+    private List<String> mItemIds;
+    
+    /**
+     * Constructor to get published items from a topic by item ID's.
+     * @param userId User ID of a user topic or null for global topic.
+     * @param topic A path like topic name.
+     * @param itemIds Published item ID's.
+     */
+    public ItemsByIdsRequest(String userId, String topic, List<String> itemIds) {
+      mUserId = userId;
+      mTopic = topic;
+      mItemIds = itemIds;
+    }
+
+    public String getUserId() {
+      return mUserId;
+    }
+
+    public String getTopic() {
+      return mTopic;
+    }
+
+    public List<String> getItemIds() {
+      return mItemIds;
+    }
+
+    public static ItemsByIdsRequest fromJson(String json) {
+      return GsonData.getGson().fromJson(json, ItemsByIdsRequest.class);
+    }
+  }
+  
+  /**
+   * @hide
    * Request payload for listing all topics with a specified limit.  If no
    * limit is specified, no maximum number of topics will be imposed.
    */
@@ -756,11 +797,11 @@ public class TopicAction {
    */
   public static class TopicSearch extends JSONifiable {
     @SerializedName("topicName")
-    protected SingleValue mDisplayName;
+    private SingleValue mDisplayName;
     @SerializedName("description")
-    protected SingleValue mDescription;
+    private SingleValue mDescription;
     @SerializedName("tags")
-    protected MultiValues mTags;
+    private MultiValues mTags;
 
     /**
      * Get the searching topic name.
@@ -958,7 +999,6 @@ public class TopicAction {
    */
   public static class TopicInfoWithSubscriptionCount extends TopicInfo {
     private int subscriptionCount;
-    private boolean subscriptionEnabled;
     /**
      * @hide
      * @param userId
@@ -980,18 +1020,6 @@ public class TopicAction {
     public TopicInfoWithSubscriptionCount setSubscriptionCount(int subscriptionCount) {
       this.subscriptionCount = subscriptionCount;
       return this;
-    }
-
-    /**
-     * Is subscription enabled.
-     * @return
-     */
-    public boolean isSubscriptionEnabled() {
-      return subscriptionEnabled;
-    }
-
-    public void setSubscriptionEnabled(boolean subscriptionEnabled) {
-      this.subscriptionEnabled = subscriptionEnabled;
     }
   }
 

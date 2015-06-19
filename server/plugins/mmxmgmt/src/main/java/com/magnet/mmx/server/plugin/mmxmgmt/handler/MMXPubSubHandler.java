@@ -164,9 +164,14 @@ public class MMXPubSubHandler extends IQHandler {
         List<TopicInfo> topiclist = topicMgr.searchByTags(from, 
             appId, TagSearch.fromJson(payload));
         return IQUtils.createResultIQ(iq, GsonData.getGson().toJson(topiclist));
+      case getItems:
+        TopicAction.FetchResponse getresp = topicMgr.getItems(from, appId, 
+            TopicAction.ItemsByIdsRequest.fromJson(payload));
+        return IQUtils.createResultIQ(iq, getresp.toJson());
       }
     } catch (IllegalArgumentException e) {
       Log.info("Invalid pubsub command string:" + commandId, e);
+      return IQUtils.createErrorIQ(iq, e.getMessage(), StatusCode.BAD_REQUEST.getCode());
     } catch (MMXException e) {
       return IQUtils.createErrorIQ(iq, e.getMessage(), e.getCode());
     }

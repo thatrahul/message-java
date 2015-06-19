@@ -15,9 +15,11 @@
  */
 package com.magnet.mmx.client;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import android.test.InstrumentationTestCase;
 import android.test.suitebuilder.annotation.SmallTest;
@@ -142,24 +144,24 @@ public class TestPubSub extends InstrumentationTestCase {
       // If failed, the pubsub buffered write is still enabled!  Make sure that
       // "xmpp.pubsub.flush.max" is set to -1.
       assertTrue(0 != list.size());
-      // Only have two summaries: topic1 (5 items) and topic2 (10 items)
-      assertEquals(2, list.size());
+      // MOB-2461 for summaries: topic0 (0 items), topic1 (5 items), topic2 (10 items)
+      assertEquals(3, list.size());
 
       list = pubManager.getTopicSummary(Arrays.asList(topics), since, null);
       assertNotNull(list);
-      assertEquals(2, list.size());
+      assertEquals(3, list.size());
       
       list = pubManager.getTopicSummary(Arrays.asList(topics), null, until);
       assertNotNull(list);
-      assertEquals(2, list.size());
+      assertEquals(3, list.size());
       
       list = pubManager.getTopicSummary(Arrays.asList(topics), since, until);
       assertNotNull(list);
-      assertEquals(2, list.size());
+      assertEquals(3, list.size());
       
       for (TopicSummary summary : list) {
         if (summary.getTopicNode().equals(topics[0])) {
-          fail(topics[0].getName()+" should not have a summary; it has no published items");
+          assertEquals(0, summary.getCount());
         } else if (summary.getTopicNode().equals(topics[1])) {
           assertEquals(5, summary.getCount());
         } else if (summary.getTopicNode().equals(topics[2])) {
@@ -256,6 +258,19 @@ public class TestPubSub extends InstrumentationTestCase {
     assertNotNull(items);
     assertEquals(2, items.size());
 
+    // Test get items by ids
+    List<String> ids = new ArrayList<String>();
+    for (MMXMessage item : items) {
+      ids.add(item.getId());
+    }
+    Map<String, MMXMessage> map = pubManager.getItemsByIds(lcTopic, ids);
+    for (MMXMessage item : items) {
+      MMXMessage pubitem = map.get(item.getId());
+      assertNotNull(pubitem);
+      assertEquals(item.getPayload().getDataAsText(),
+                   pubitem.getPayload().getDataAsText());
+    }
+
     // Test get and set options
     MMXTopicOptions mcOptions = pubManager.getOptions(mcTopic);
     assertNotNull(mcOptions);
@@ -270,6 +285,13 @@ public class TestPubSub extends InstrumentationTestCase {
     assertEquals(lowerCaseDescription, mcOptions.getDescription());
     
     // Test set and get tags
+    try {
+      pubManager.setAllTags(mcTopic, Arrays.asList(new String[] {
+          "LongTag12345678901234567890", "LongTag01234567890123456789012345" }));
+      fail("It should fail because tags are longer than 25 chars");
+    } catch (MMXException e) {
+      assertEquals(MMXException.BAD_REQUEST, e.getCode());
+    }
     pubManager.setAllTags(mcTopic, Arrays.asList(new String[] { "Tag1", "tag2" }));
     TopicTags result = pubManager.getAllTags(lcTopic);
     assertTrue(result.getTags().contains("Tag1"));

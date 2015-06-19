@@ -15,14 +15,14 @@
 
 package com.magnet.mmx.protocol;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * @hide
  * A convenient class for the optional MMXMessage headers (meta data.)  All
  * headers are optional.
  */
-public class Headers extends HashMap<String, String> {
+public class Headers extends Hashtable<String, String> {
   private static final long serialVersionUID = 5090333410521907673L;
   /**
    * A special header used by MMX SDK to specify whom the message should be

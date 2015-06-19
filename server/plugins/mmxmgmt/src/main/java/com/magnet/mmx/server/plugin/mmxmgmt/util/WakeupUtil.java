@@ -16,11 +16,16 @@ package com.magnet.mmx.server.plugin.mmxmgmt.util;
 
 import com.magnet.mmx.protocol.PushType;
 import com.magnet.mmx.server.common.data.AppEntity;
-import com.magnet.mmx.server.plugin.mmxmgmt.db.*;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.AppConfigurationCache;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.DeviceEntity;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.WakeupEntity;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.WakeupEntityDAO;
 import com.magnet.mmx.server.plugin.mmxmgmt.push.MMXPushAPNSPayloadBuilder;
 import com.magnet.mmx.server.plugin.mmxmgmt.push.MMXPushGCMPayloadBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  */
@@ -29,6 +34,24 @@ public class WakeupUtil {
 
   public static void queueWakeup(AppEntity appEntity, DeviceEntity deviceEntity, String messageId) {
     LOGGER.trace("queueWakeup : messageId={}", messageId);
+    WakeupEntityDAO wakeupEntityDAO = DBUtil.getWakeupEntityDAO();
+    AppConfigurationCache configurationCache = AppConfigurationCache.getInstance();
+    String mutePeriodString = configurationCache.getString(appEntity.getAppId(), MMXConfigKeys.WAKEUP_MUTE_PERIOD_MINUTES);
+    int mutePeriod = MMXServerConstants.WAKEUP_MUTE_PERIOD_MINUTES_DEFAULT;
+    if (mutePeriodString == null || mutePeriodString.isEmpty()) {
+      mutePeriod = MMXServerConstants.WAKEUP_MUTE_PERIOD_MINUTES_DEFAULT;
+    } else {
+      mutePeriod = Integer.parseInt(mutePeriodString);
+    }
+    List<WakeupEntity> queuedDuringMute = wakeupEntityDAO.retrieveOpenOrSentWakeup(appEntity.getAppId(),
+                                            deviceEntity, mutePeriod);
+
+    if (!queuedDuringMute.isEmpty()) {
+      LOGGER.info("Device id:{} has wakeup queued or sent during mute period : {}. Not queueing a wakeup",
+          deviceEntity.getDeviceId(), mutePeriod);
+      return;
+    }
+
     WakeupEntity wakeupEntity = new WakeupEntity();
     wakeupEntity.setToken(deviceEntity.getClientToken());
     wakeupEntity.setDeviceId(deviceEntity.getDeviceId());
@@ -48,7 +71,7 @@ public class WakeupUtil {
     }
     wakeupEntity.setMessageId(messageId);
     wakeupEntity.setAppId(appEntity.getAppId());
-    WakeupEntityDAO wakeupEntityDAO = DBUtil.getWakeupEntityDAO();
+
     wakeupEntityDAO.offer(wakeupEntity);
   }
 }

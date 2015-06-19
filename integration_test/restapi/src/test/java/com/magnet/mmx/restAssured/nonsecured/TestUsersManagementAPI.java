@@ -30,6 +30,7 @@ import static org.hamcrest.CoreMatchers.is;
 
 public class TestUsersManagementAPI extends TestCase {
   private static final String INVALID_CHAR_MESSAGE = "Invalid character specified in username";
+  private static final String DUPLICATE_USER = "User with username:%s already exists";
     @Before
     public void setUp() {
         RestAssured.baseURI = TestUtils.HTTPBaseUrl;
@@ -224,6 +225,7 @@ public class TestUsersManagementAPI extends TestCase {
         request.when().delete("/mmxadmin/rest/v1/user/test01user/app/" + TestUtils.appId);
         request.when().delete("/mmxadmin/rest/v1/user/test02user/app/"+ TestUtils.appId);
         request.when().delete("/mmxadmin/rest/v1/user/test03user/app/" + TestUtils.appId);
+        request.when().delete("/mmxadmin/rest/v1/user/test08user/app/" + TestUtils.appId);
     }
 
 
@@ -363,5 +365,63 @@ public class TestUsersManagementAPI extends TestCase {
         statusCode(400)
         .body("code", equalTo(48))
         .body("message", containsString(INVALID_CHAR_MESSAGE));
+  }
+
+  @Test
+  public void test08CreateDuplicateUser() {
+    TestUtils.mmxApiHeaders.put("X-mmx-app-owner", TestUtils.appOwner);
+    String userName = "test08user";
+    // Create User
+    String payload = "{\n" +
+        "  \"username\": \"" + userName+ "\",\n" +
+        "  \"password\": \"pass\",\n" +
+        "  \"appId\": " +
+        "\"" + TestUtils.appId + "\",\n" +
+        "  \"name\": \"test08 user\",\n" +
+        "  \"email\": \"test08User@email.com\",\n" +
+        "  \"isAdmin\" : true\n" +
+        "}";
+    Response responsePost =
+        given().log().all().
+            authentication().preemptive().basic(TestUtils.user, TestUtils.pass).
+            contentType(TestUtils.JSON).
+            headers(TestUtils.toHeaders(TestUtils.mmxApiHeaders)).
+            body(payload).
+            when().
+            post("/mmxadmin/rest/v1/user");
+
+    responsePost.then().
+        statusCode(201);
+
+    /**
+     * try creating the same user again
+     */
+    Response duplicatePost =
+        given().log().all().
+            authentication().preemptive().basic(TestUtils.user, TestUtils.pass).
+            contentType(TestUtils.JSON).
+            headers(TestUtils.toHeaders(TestUtils.mmxApiHeaders)).
+            body(payload).
+            when().
+            post("/mmxadmin/rest/v1/user");
+
+    String errorMessage = String.format(DUPLICATE_USER, userName);
+
+    duplicatePost.then().
+        statusCode(409)
+        .body("code", equalTo(48))
+        .body("message", containsString(errorMessage));
+
+    // Delete
+    Response responseDelete =
+        given().log().all().
+            authentication().preemptive().basic(TestUtils.user, TestUtils.pass).
+            contentType(TestUtils.JSON).
+            headers(TestUtils.toHeaders(TestUtils.mmxApiHeaders)).
+            when().
+            delete("/mmxadmin/rest/v1/user/" + userName + "/app/" + TestUtils.appId);
+
+    responseDelete.then().
+        statusCode(200);
   }
 }

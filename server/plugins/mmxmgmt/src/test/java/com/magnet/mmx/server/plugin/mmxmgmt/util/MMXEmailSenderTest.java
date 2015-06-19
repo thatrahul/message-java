@@ -14,11 +14,26 @@
  */
 package com.magnet.mmx.server.plugin.mmxmgmt.util;
 
+import com.magnet.mmx.util.JiveGlobalsMock;
+import org.jivesoftware.util.JiveGlobals;
+
 /**
  */
+//@RunWith(JMockit.class)
 public class MMXEmailSenderTest {
+  //@Test
   public void testEmailSender() throws Exception {
-    EmailConfig config = new EmailConfig(MMXServerConstants.DEFAULT_EMAIL_HOST, Integer.toString(MMXServerConstants.DEFAULT_SMTP_PORT), MMXServerConstants.DEFAULT_EMAIL_USER, MMXServerConstants.DEFAULT_EMAIL_PASSWORD);
+    JiveGlobalsMock.setup();
+    JiveGlobals.setProperty(MMXConfigKeys.ALERT_EMAIL_HOST, "");
+    JiveGlobals.setProperty(MMXConfigKeys.ALERT_EMAIL_PORT, "");
+    JiveGlobals.setProperty(MMXConfigKeys.ALERT_EMAIL_USER, "");
+    JiveGlobals.setProperty(MMXConfigKeys.ALERT_EMAIL_PASSWORD, "");
+    JiveGlobals.setProperty(MMXConfigKeys.ALERT_EMAIL_BCC_LIST, "");
+   /* String host = MMXConfiguration.getConfiguration().getString(MMXConfigKeys.ALERT_EMAIL_HOST, MMXServerConstants.DEFAULT_EMAIL_HOST);
+    String port = MMXConfiguration.getConfiguration().getString(MMXConfigKeys.ALERT_EMAIL_PORT, Integer.toString(MMXServerConstants.DEFAULT_SMTP_PORT));
+    String user = MMXConfiguration.getConfiguration().getString(MMXConfigKeys.ALERT_EMAIL_USER, MMXServerConstants.DEFAULT_EMAIL_USER);
+    String password = MMXConfiguration.getConfiguration().getString(MMXConfigKeys.ALERT_EMAIL_PASSWORD, MMXServerConstants.DEFAULT_EMAIL_PASSWORD);
+    */
     new MMXEmailSender().sendToBccOnly("Hey there");
   }
 }

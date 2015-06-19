@@ -15,6 +15,7 @@
 package com.magnet.mmx.server.plugin.mmxmgmt.servlet;
 
 import com.magnet.mmx.protocol.AppCreate;
+import com.magnet.mmx.server.api.v1.protocol.AppConfig;
 import com.magnet.mmx.server.common.data.AppEntity;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.ErrorCode;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.ErrorMessages;
@@ -22,6 +23,10 @@ import com.magnet.mmx.server.plugin.mmxmgmt.apns.APNSCertificateValidator;
 import com.magnet.mmx.server.plugin.mmxmgmt.apns.APNSConnectionPool;
 import com.magnet.mmx.server.plugin.mmxmgmt.apns.APNSConnectionPoolImpl;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.AppAlreadyExistsException;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.AppConfigurationCache;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.AppConfigurationEntity;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.AppConfigurationEntityDAO;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.AppConfigurationEntityDAOImpl;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.AppDAO;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.AppDAOImpl;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.AppManagementException;
@@ -57,6 +62,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -81,6 +87,7 @@ public class AppResource {
   static final DateFormat iso8601DateFormat = Utils.buildISO8601DateFormat();
   private static final String APNS_CERT_PASSWORD = "apnsCertPassword";
   private static final String APNS_CERT_FILE = "certfile";
+  private static final String APP_ID_KEY = "appId";
 
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
@@ -114,6 +121,13 @@ public class AppResource {
       String appId = response.getAppId();
       AppDAO dao = new AppDAOImpl(new OpenFireDBConnectionProvider());
       AppEntity appEntity = dao.getAppForAppKey(appId);
+
+      /**
+       * create default configuration for the mute period.
+       */
+      AppConfigurationEntityDAO configurationDAO = new AppConfigurationEntityDAOImpl(new OpenFireDBConnectionProvider());
+      configurationDAO.updateConfiguration(appEntity.getAppId(), MMXConfigKeys.WAKEUP_MUTE_PERIOD_MINUTES,
+          Integer.toString(MMXServerConstants.WAKEUP_MUTE_PERIOD_MINUTES_DEFAULT));
 
       Response createdResponse = Response.status(Response.Status.CREATED)
                                  .entity(new JSONFriendlyAppEntityDecorator(appEntity))
@@ -415,6 +429,99 @@ public class AppResource {
     }
   }
 
+  @GET
+  @Path("{"+ APP_ID_KEY +"}/configurations")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getAppConfig(@PathParam(APP_ID_KEY) String appId) {
+    try {
+      if (appId == null || appId.isEmpty()) {
+        throw buildForBadRequest(AppErrorCode.INVALID_APP_ID.name(), APP_ID_EMPTY_OR_NULL);
+      }
+      AppDAO dao = new AppDAOImpl(new OpenFireDBConnectionProvider());
+      AppEntity entity = dao.getAppForAppKey(appId);
+
+      if (entity == null) {
+        throw build(AppErrorCode.INVALID_APP_ID.name(), APP_NOT_FOUND, Response.Status.NOT_FOUND);
+      }
+      AppConfigurationEntityDAO configurationEntityDAO = new AppConfigurationEntityDAOImpl(new OpenFireDBConnectionProvider());
+      List<AppConfigurationEntity> configEntityList = configurationEntityDAO.getConfigurations(appId);
+
+      List<AppConfig> configList = new LinkedList<AppConfig>();
+      for (AppConfigurationEntity centity : configEntityList) {
+        AppConfig config = AppConfig.from(centity);
+        configList.add(config);
+      }
+      Response response = Response.status(Response.Status.OK)
+          .entity(configList)
+          .build();
+      return response;
+    } catch (WebApplicationException e) {
+      throw e;
+    } catch (Throwable t) {
+      throw build(WebConstants.STATUS_ERROR, t.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @POST
+  @Path("{"+ APP_ID_KEY +"}/configurations")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response updateAppConfig(@PathParam(APP_ID_KEY) String appId, List<AppConfig> configs) {
+    try {
+      if (appId == null || appId.isEmpty()) {
+        throw buildForBadRequest(AppErrorCode.INVALID_APP_ID.name(), APP_ID_EMPTY_OR_NULL);
+      }
+      AppDAO dao = new AppDAOImpl(new OpenFireDBConnectionProvider());
+      AppEntity entity = dao.getAppForAppKey(appId);
+
+      if (entity == null) {
+        throw build(AppErrorCode.INVALID_APP_ID.name(), APP_NOT_FOUND, Response.Status.NOT_FOUND);
+      }
+
+      if (configs == null || configs.isEmpty()) {
+        throw buildForBadRequest(AppErrorCode.NULL_OR_EMPTY_CONFIG_LIST.name(), ErrorMessages.ERROR_CONFIG_LIST_NULL_OR_EMPTY);
+      }
+      LOGGER.info("Update configs for appId:{}", appId);
+      AppConfigurationCache cache = AppConfigurationCache.getInstance();
+      AppConfigurationEntityDAO configurationEntityDAO = new AppConfigurationEntityDAOImpl(new OpenFireDBConnectionProvider());
+      // validate configurations
+      for (AppConfig config : configs) {
+        String key = config.getKey();
+        String value = config.getValue();
+        if (key == null || key.isEmpty()) {
+          throw buildForBadRequest(AppErrorCode.INVALID_CONFIG_KEY.name(), ErrorMessages.ERROR_CONFIG_BAD_KEY);
+        }
+        if (value == null) {
+          throw buildForBadRequest(AppErrorCode.NULL_CONFIG_VALUE.name(), ErrorMessages.ERROR_CONFIG_BAD_VALUE);
+        }
+
+        if (key.equals(MMXConfigKeys.WAKEUP_MUTE_PERIOD_MINUTES)) {
+          boolean valid = validateWakeupMutePeriod(value);
+          if (!valid) {
+            String template = "Value supplied for key:%s is invalid.";
+            String message = String.format(template, key);
+            throw buildForBadRequest(AppErrorCode.INVALID_CONFIG_VALUE.name(),message);
+          }
+        }
+      }
+      for (AppConfig config : configs) {
+        String key = config.getKey();
+        String value = config.getValue();
+        configurationEntityDAO.updateConfiguration(appId, key, value);
+        cache.clear(appId, key);
+      }
+      Response response = Response.status(Response.Status.OK)
+          .build();
+      return response;
+    } catch (WebApplicationException e) {
+      LOGGER.info("Web Application exception", e);
+      throw e;
+    } catch (Throwable t) {
+      LOGGER.info("Throwable", t);
+      throw build(WebConstants.STATUS_ERROR, t.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   private WebApplicationException buildForBadRequest (String code, String message) {
     ErrorResponse error = new ErrorResponse();
     error.setCode(code);
@@ -445,7 +552,11 @@ public class AppResource {
     UNKNOWN_APP_EXCEPTION,
     INVALID_APP_ID,
     INVALID_APNS_CERT,
-    INVALID_GOOGLE_API_KEY
+    INVALID_GOOGLE_API_KEY,
+    NULL_OR_EMPTY_CONFIG_LIST,
+    INVALID_CONFIG_KEY,
+    NULL_CONFIG_VALUE,
+    INVALID_CONFIG_VALUE
     ;
   }
 
@@ -486,4 +597,18 @@ public class AppResource {
       return rv;
     }
   }
+
+  private boolean validateWakeupMutePeriod (String value) {
+    try {
+      int minutes = Integer.parseInt(value);
+      if (minutes < 0) {
+        return false;
+      }
+      return true;
+    } catch (NumberFormatException e) {
+      LOGGER.info("Invalid wakeup mute period:{}" , value);
+      return false;
+    }
+  }
+
 }

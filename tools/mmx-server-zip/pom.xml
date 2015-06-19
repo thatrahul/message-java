@@ -5,12 +5,12 @@
     <parent>
         <groupId>com.magnet.mmx</groupId>
         <artifactId>mmx-root</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <groupId>com.magnet.mmx</groupId>
     <artifactId>mmx-server</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <packaging>pom</packaging>
 
     <name>mmx-server</name>
@@ -19,7 +19,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sandbox.dir>${project.build.directory}/sandbox</sandbox.dir>
-        <version.addon>1.0.1</version.addon>
+        <version.addon>1.0.2</version.addon>
     </properties>
 
     <dependencies>
@@ -49,7 +49,7 @@
                                 <artifactItem>
                                     <groupId>com.magnet.mmx.ext</groupId>
                                     <artifactId>mmx-openfire</artifactId>
-                                    <version>1.0.1</version>
+                                    <version>1.0.2</version>
                                     <type>zip</type>
                                     <overWrite>false</overWrite>
                                     <outputDirectory>${sandbox.dir}/mmx-server</outputDirectory>
@@ -112,7 +112,7 @@
                 <inherited>true</inherited>
                 <configuration>
                     <descriptor>${basedir}/src/assembly/bin.xml</descriptor>
-                    <finalName>mmx-server-1.0.1</finalName>
+                    <finalName>${artifactId}-1.0.2</finalName>
                 </configuration>
                 <executions>
                     <!-- step 6. zip up the server. please see bin.xml -->

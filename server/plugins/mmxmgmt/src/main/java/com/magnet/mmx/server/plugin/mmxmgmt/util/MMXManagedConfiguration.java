@@ -265,27 +265,27 @@ public class MMXManagedConfiguration implements MMXManagedConfigurationMBean {
   }
 
   @Override
-  public void setInstanceMaxInappMessageRate(long maxInAppMessageRate) {
-    LOGGER.trace("setMaxInAppMessageRate : {}", maxInAppMessageRate);
-    configuration.setValue(MMXConfigKeys.MAX_INAPP_MESSAGE_RATE, Long.toString(maxInAppMessageRate));
+  public void setInstanceMaxXmppRate(long maxXmppRate) {
+    LOGGER.trace("setInstanceMaxXmppMessageRate : {}", maxXmppRate);
+    configuration.setValue(MMXConfigKeys.MAX_XMPP_RATE, Long.toString(maxXmppRate));
   }
 
   @Override
-  public long getInstanceMaxInappMessageRate() {
-    long maxInAppMessageRate = configuration.getLong(MMXConfigKeys.MAX_INAPP_MESSAGE_RATE, -1);
-    LOGGER.trace("getMaxInAppMessageRate : {}", maxInAppMessageRate);
-    return maxInAppMessageRate;
+  public long getInstanceMaxXmppRate() {
+    long maxXmppRate = configuration.getLong(MMXConfigKeys.MAX_XMPP_RATE, -1);
+    LOGGER.trace("getInstanceMaxXmppRate : {}", maxXmppRate);
+    return maxXmppRate;
   }
 
   @Override
-  public void setInstanceMaxPushMessageRate(long maxPushMessageRate) {
-    LOGGER.trace("setPushMaxMessageRate : {}", maxPushMessageRate);
-    configuration.setValue(MMXConfigKeys.MAX_PUSH_MESSAGE_RATE, Long.toString(maxPushMessageRate));
+  public void setInstanceMaxHttpRate(long maxHttpRate) {
+    LOGGER.trace("setInstanceMaxHttpRate : {}", maxHttpRate);
+    configuration.setValue(MMXConfigKeys.MAX_HTTP_RATE, Long.toString(maxHttpRate));
   }
 
   @Override
-  public long getInstanceMaxPushMessageRate() {
-    long maxPushMessageRate = configuration.getLong(MMXConfigKeys.MAX_PUSH_MESSAGE_RATE, -1);
+  public long getInstanceMaxHttpRate() {
+    long maxPushMessageRate = configuration.getLong(MMXConfigKeys.MAX_HTTP_RATE, -1);
     LOGGER.trace("getPushMaxMessageRate : {}", maxPushMessageRate);
     return maxPushMessageRate;
   }

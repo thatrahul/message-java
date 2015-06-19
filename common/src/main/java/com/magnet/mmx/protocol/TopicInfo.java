@@ -44,6 +44,8 @@ public class TopicInfo extends MMXTopicId implements MMXTopic {
   private PublisherType mPublisherType;
   @SerializedName("creator")
   private String mCreator;
+  @SerializedName("subscriptionEnabled")
+  private boolean mSubscriptionEnabled;
   
   /**
    * @hide
@@ -200,12 +202,29 @@ public class TopicInfo extends MMXTopicId implements MMXTopic {
   }
 
   /**
+   * Is subscription enabled for this topic?
+   * @return
+   */
+  public boolean isSubscriptionEnabled() {
+    return mSubscriptionEnabled;
+  }
+
+  /**
+   * @param subscriptionEnabled
+   * @return
+   */
+  public TopicInfo setSubscriptionEnabled(boolean subscriptionEnabled) {
+    mSubscriptionEnabled = subscriptionEnabled;
+    return this;
+  }
+
+  /**
    * Get the topic information in string format for debug purpose.
    * @return Informative data about the topic.
    */
   @Override
   public String toString() {
-    return "[topic="+super.toString()+", desc="+mDescription+
+    return "[topic="+super.toString()+", desc="+mDescription+", sub="+mSubscriptionEnabled+
         ", maxItems="+mMaxItems+", maxSize="+mMaxPayloadSize+", pubtype="+mPublisherType+
         ", create="+mCreationDate+", mod="+mModifiedDate+"]";
   }

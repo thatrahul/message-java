@@ -15,11 +15,9 @@
 package com.magnet.mmx.server.plugin.mmxmgmt.api.topics;
 
 import com.google.common.base.Strings;
-import com.magnet.mmx.protocol.MMXTopic;
 import com.magnet.mmx.protocol.MMXTopicId;
 import com.magnet.mmx.protocol.TopicAction;
 import com.magnet.mmx.protocol.TopicSummary;
-import com.magnet.mmx.server.api.v1.MMXHeaderAuth;
 import com.magnet.mmx.server.common.data.AppEntity;
 import com.magnet.mmx.server.plugin.mmxmgmt.MMXException;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.ErrorCode;
@@ -43,7 +41,6 @@ import java.util.List;
 /**
  */
 @Path("/topicssummary")
-@MMXHeaderAuth
 public class MMXTopicSummaryResource {
   private static final Logger LOGGER = LoggerFactory.getLogger(MMXTopicSummaryResource.class);
   

@@ -34,11 +34,13 @@ tools/mac-installer/MMS/MMS.pkgproj
 tools/mac-installer/build_pkg.sh
 tools/mac-installer/resources/post-install.sh
 tools/mac-installer/resources/stop_existing.sh
+tools/mac-installer/resources/summary.htm
 tools/mmx-perf-driver/src/main/scripts/run-perf.sh
 tools/mmx-server-cluster-zip/pom.xml
 tools/mmx-server-zip/pom.xml
 tools/mmx-standalone-dist-win/pom.xml
 tools/mmx-standalone-dist-win/src/main/resources/troubleshooting.html
+tools/mmx-standalone-dist-win/src/main/resources/README.txt
 tools/mmx-standalone-dist/pom.xml
 tools/mmx-standalone-dist/src/main/resources/README.txt
 tools/mmx-standalone-dist/src/main/resources/troubleshooting

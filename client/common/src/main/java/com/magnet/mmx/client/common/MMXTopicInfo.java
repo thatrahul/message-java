@@ -15,13 +15,13 @@
 
 package com.magnet.mmx.client.common;
 
+import java.io.Serializable;
+import java.util.Date;
+
 import com.magnet.mmx.protocol.MMXTopic;
 import com.magnet.mmx.protocol.TopicAction.PublisherType;
 import com.magnet.mmx.protocol.TopicInfo;
 import com.magnet.mmx.util.XIDUtil;
-
-import java.io.Serializable;
-import java.util.Date;
 
 /**
  * Topic information from a topic search or list.
@@ -38,6 +38,7 @@ public class MMXTopicInfo implements Serializable {
   private Date mModifiedDate;
   private PublisherType mPublisherType;
   private MMXid mCreator;
+  private boolean mSubscriptionEnabled;
 
   /**
    * @hide
@@ -53,6 +54,7 @@ public class MMXTopicInfo implements Serializable {
     mModifiedDate = topicInfo.getModifiedDate();
     mPublisherType = topicInfo.getPublisherType();
     mCreator = XIDUtil.toXid(topicInfo.getCreator());
+    mSubscriptionEnabled = topicInfo.isSubscriptionEnabled();
   }
 
   /**
@@ -64,8 +66,11 @@ public class MMXTopicInfo implements Serializable {
   }
 
   /**
-   * Check if this topic is a collection (i.e. for subscription only.)
-   * @return true for subscribe only; false for publishing and subscription.
+   * Check if this topic is a collection containing leaf topics and/or other
+   * collections.  A collection topic can only be subscribed, but it does not
+   * contain published items.  However, only leaf topics can contain
+   * published items.
+   * @return true for a collection topic; false for publishing and subscription.
    */
   public boolean isCollection() {
     return mCollection;
@@ -80,7 +85,7 @@ public class MMXTopicInfo implements Serializable {
   }
 
   /**
-   * Are the published items in this topic persistent?
+   * Check if the published items are persisted in this topic.
    * @return true if this topic holds persistent items; otherwise, false.
    */
   public boolean isPersistent() {
@@ -136,12 +141,20 @@ public class MMXTopicInfo implements Serializable {
   }
 
   /**
+   * Check if subscription is enabled for this topic.
+   * @return true if subscription is enabled; otherwise, false.
+   */
+  public boolean isSubscriptionEnabled() {
+    return mSubscriptionEnabled;
+  }
+
+  /**
    * Get the topic information in string format for debug purpose.
    * @return Informative data about the topic.
    */
   @Override
   public String toString() {
-    return "[topic="+mTopic+", desc="+mDescription+
+    return "[topic="+mTopic+", desc="+mDescription+", sub="+mSubscriptionEnabled+
         ", maxItems="+mMaxItems+", maxSize="+mMaxPayloadSize+", pubtype="+mPublisherType+
         ", create="+mCreationDate+", mod="+mModifiedDate+", creator="+mCreator+"]";
   }

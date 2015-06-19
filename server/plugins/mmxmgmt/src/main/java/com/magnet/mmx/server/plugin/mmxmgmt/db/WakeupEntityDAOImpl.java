@@ -25,6 +25,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  */
@@ -44,6 +45,11 @@ public class WakeupEntityDAOImpl implements WakeupEntityDAO {
 
   private static final String DELETE_BAD_API_KEY_WAKEUP_RECORDS = "DELETE FROM mmxWakeupQueue " +
       "     WHERE  id = ? AND  dateSentUTC IS NULL";
+
+  private static final String WAKEUP_SELECT_FOR_DEVICE_FOR_MUTE = "SELECT id, deviceId, clientToken, tokenType, googleApiKey," +
+      "payload,messageId,dateCreatedUTC, appId FROM mmxWakeupQueue WHERE appId = ? AND deviceId = ? AND " +
+      "(? - dateCreatedUTC < ?) ";
+
 
   private ConnectionProvider provider;
 
@@ -169,5 +175,43 @@ public class WakeupEntityDAOImpl implements WakeupEntityDAO {
     } finally {
       CloseUtil.close(LOGGER, pstmt, con);
     }
+  }
+
+  @Override
+  public List<WakeupEntity> retrieveOpenOrSentWakeup(String appId, DeviceEntity deviceEntity, int mutePeriod) {
+    Connection con = null;
+    PreparedStatement pstmt = null;
+    ResultSet rs = null;
+    List<WakeupEntity> returnList = new ArrayList<WakeupEntity>(10);
+    try {
+      con = provider.getConnection();
+      pstmt = con.prepareStatement(WAKEUP_SELECT_FOR_DEVICE_FOR_MUTE);
+      pstmt.setString(1, appId);
+      pstmt.setString(2, deviceEntity.getDeviceId());
+      pstmt.setInt(3, (int) (currentTime().getTime()/1000L));
+      pstmt.setInt(4, (int) TimeUnit.SECONDS.convert(mutePeriod, TimeUnit.MINUTES));
+      rs = pstmt.executeQuery();
+      while (rs.next()) {
+        WakeupEntity pae = new WakeupEntity.WakeupEntityBuilder().build(rs);
+        returnList.add(pae);
+      }
+      rs.close();
+      pstmt.close();
+      con.close();
+      rs = null;
+      pstmt = null;
+      con = null;
+    } catch (SQLException e) {
+      LOGGER.error("SQLException in retrieveOpenOrSentWakeup", e);
+      throw new DbInteractionException(e);
+    } finally {
+      CloseUtil.close(LOGGER, rs, pstmt, con);
+    }
+    return returnList;
+  }
+
+
+  protected Date currentTime() {
+    return new Date();
   }
 }

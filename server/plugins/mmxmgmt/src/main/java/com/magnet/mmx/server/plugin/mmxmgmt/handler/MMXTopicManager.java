@@ -82,6 +82,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
@@ -89,7 +91,7 @@ import java.util.TreeMap;
 public class MMXTopicManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MMXAppManager.class);
-
+  private static final boolean EXCLUDE_USER_TOPICS = true;
   private XMPPServer mServer = XMPPServer.getInstance();
   private PubSubService mPubSubModule = mServer.getPubSubModule();
 
@@ -259,7 +261,8 @@ public class MMXTopicManager {
   }
   /**
    * Delete a topic identified by a topic id.
-   * @param topicId
+   * @param appId The app ID for error message.
+   * @param topicId The node ID.
    * @return
    */
   public TopicActionResult deleteTopic (String appId, String topicId) {
@@ -953,7 +956,8 @@ public class MMXTopicManager {
       .setCreationDate(node.getCreationDate())
       .setDescription(node.getDescription())
       .setModifiedDate(node.getModificationDate())
-      .setCreator(node.getCreator().toString());
+      .setCreator(node.getCreator().toString())
+      .setSubscriptionEnabled(node.isSubscriptionEnabled());
     if (!node.isCollectionNode()) {
       LeafNode leafNode = (LeafNode) node;
       info.setMaxItems(leafNode.isPersistPublishedItems() ?
@@ -1078,9 +1082,14 @@ public class MMXTopicManager {
   
   public TopicAction.SummaryResponse getSummary(JID from, String appId,
           TopicAction.SummaryRequest rqt) throws MMXException {
+    // Build a collection of topic ID's from the request; it contains topics
+    // without any published items.
+    HashSet<String> tpNoItems = new HashSet<String>(rqt.getTopicNodes().size());
+    for (MMXTopicId topicId : rqt.getTopicNodes()) {
+      tpNoItems.add(topicId.toString());
+    }
     TopicAction.SummaryResponse resp = new TopicAction.SummaryResponse(
         rqt.getTopicNodes().size());
-    
     Connection con = null;
     PreparedStatement pstmt = null;
     ResultSet rs = null;
@@ -1106,7 +1115,8 @@ public class MMXTopicManager {
           break;
         }
         String argList = SQLHelper.generateArgList(topics.length);
-        String sql = "SELECT ofPubsubNode.maxItems,count(*),max(ofPubsubItem.creationDate),ofPubsubNode.name FROM ofPubsubItem, ofPubsubNode  " +
+        String sql = "SELECT ofPubsubNode.maxItems,count(*),max(ofPubsubItem.creationDate),ofPubsubNode.name "+
+                     "FROM ofPubsubItem, ofPubsubNode  " +
                      "WHERE ofPubsubItem.serviceID=? AND ofPubsubItem.nodeID = ofPubsubNode.nodeId AND ofPubsubItem.nodeID IN ("+argList+") "+dateRange+
                      "GROUP BY ofPubsubItem.nodeID";
         pstmt = con.prepareStatement(sql);
@@ -1123,9 +1133,17 @@ public class MMXTopicManager {
           resp.add(new TopicSummary(topic)
             .setCount((maxItems < 0) ? count : Math.min(maxItems, count))
             .setLastPubTime(creationDate));
+          // This topic has published items; remove it from the collection.
+          tpNoItems.remove(topic.toString());
         }
         start += topics.length;
       } while (start < numOfTopics);
+      // Fill the response with the topics having no published items.
+      Iterator<String> it = tpNoItems.iterator();
+      while (it.hasNext()) {
+        String topicId = it.next();
+        resp.add(new TopicSummary(MMXTopicId.parse(topicId)).setCount(0));
+      }
       return resp;
     } catch (Exception sqle) {
       LOGGER.error(sqle.getMessage(), sqle);
@@ -1167,7 +1185,8 @@ public class MMXTopicManager {
         .setPublisherType(ConfigureForm.convert(
                 PublisherModel.valueOf(entity.getPublisherModel())))
         .setPersistent(entity.isPersistItems())
-        .setCreator(entity.getCreator());
+        .setCreator(entity.getCreator())
+        .setSubscriptionEnabled(entity.isSubscriptionEnabled());
       res.add(info);
     }
     return res;
@@ -1316,7 +1335,8 @@ public class MMXTopicManager {
 
   public TopicAction.TopicQueryResponse searchTopic(JID from, String appId,
                                                     TopicAction.TopicSearchRequest rqt) throws MMXException {
-    String userId = JIDUtil.getUserId(from);
+    String userId = EXCLUDE_USER_TOPICS ? 
+        TopicHelper.TOPIC_FOR_APP_STR : JIDUtil.getUserId(from);
     TopicQueryBuilder queryBuilder = new TopicQueryBuilder();
     int offset = rqt.getOffset();
     int size = rqt.getLimit();
@@ -1343,7 +1363,8 @@ public class MMXTopicManager {
         .setMaxPayloadSize(ti.getMaxPayloadSize())
         .setMaxItems(ti.isPersistent() ? ti.getMaxItems() : 0)
         .setPersistent(ti.isPersistent())
-        .setCreator(ti.getCreator());
+        .setCreator(ti.getCreator())
+        .setSubscriptionEnabled(ti.isSubscriptionEnabled());
       topicList.add(info);
     }
     TopicAction.TopicQueryResponse resp = new TopicAction.TopicQueryResponse(results.getTotal(), topicList);
@@ -1678,6 +1699,63 @@ public class MMXTopicManager {
           pubItem.getPublisher().toBareJID(),
           pubItem.getCreationDate(),
           pubItem.getPayloadXML());
+      mmxItems.add(mmxItem);
+    }
+    TopicAction.FetchResponse resp = new TopicAction.FetchResponse(
+        rqt.getUserId(), topic, mmxItems);
+    return resp;
+  }
+  
+  public TopicAction.FetchResponse getItems(JID from, String appId, 
+      TopicAction.ItemsByIdsRequest rqt) throws MMXException {
+    String topic = TopicHelper.normalizePath(rqt.getTopic());
+    String realTopic = TopicHelper.makeTopic(appId, rqt.getUserId(), topic);
+    Node node = mPubSubModule.getNode(realTopic);
+    if (node == null) {
+      throw new MMXException(StatusCode.TOPIC_NOT_FOUND.getMessage(topic), 
+          StatusCode.TOPIC_NOT_FOUND.getCode());
+    }
+    if (node.isCollectionNode()) {
+      throw new MMXException("Cannot get items from a collection topic",
+          StatusCode.NOT_IMPLEMENTED.getCode());
+    }
+    
+    LeafNode leafNode = (LeafNode) node;
+    List<String> itemIds = rqt.getItemIds();
+    if (itemIds == null || itemIds.isEmpty()) {
+      throw new MMXException(StatusCode.BAD_REQUEST.getMessage("no item ID's"),
+          StatusCode.BAD_REQUEST.getCode());
+    }
+    // Check if sender and subscriber JIDs match or if a valid "trusted proxy" is being used
+    // Assumed that the owner of the subscription is the bare JID of the subscription JID.
+    JID owner = from.asBareJID();
+    if (!node.getAccessModel().canAccessItems(node, owner, from)) {
+      throw new MMXException(StatusCode.FORBIDDEN.getMessage(topic), 
+          StatusCode.FORBIDDEN.getCode());
+    }
+    // Check that the requester is not an outcast
+    NodeAffiliate affiliate = node.getAffiliate(owner);
+    if (affiliate != null && affiliate.getAffiliation() == NodeAffiliate.Affiliation.outcast) {
+        throw new MMXException(StatusCode.FORBIDDEN.getMessage(topic), 
+            StatusCode.FORBIDDEN.getCode());
+    }
+    
+    // TODO: do we need to check for subscription first?
+    List<MMXPublishedItem> mmxItems = new ArrayList<MMXPublishedItem>(itemIds.size());
+    for (String itemId : itemIds) {
+      if (itemId == null) {
+        throw new MMXException(StatusCode.BAD_REQUEST.getMessage("null item ID"), 
+            StatusCode.BAD_REQUEST.getCode());
+      }
+      PublishedItem pubItem = leafNode.getPublishedItem(itemId);
+      if (pubItem == null) {
+        // Ignored the invalid item ID.
+        continue;
+      }
+      MMXPublishedItem mmxItem = new MMXPublishedItem(pubItem.getID(), 
+            pubItem.getPublisher().toBareJID(),
+            pubItem.getCreationDate(),
+            pubItem.getPayloadXML());
       mmxItems.add(mmxItem);
     }
     TopicAction.FetchResponse resp = new TopicAction.FetchResponse(

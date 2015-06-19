@@ -50,6 +50,12 @@ public final class MMXMessageManager extends MMXManager {
   /**
    * Convenience method to send a simple text message to a single recipient.
    *
+   * Sends a payload using the messaging system.  If the MMXClient is not connected,
+   * the sending of this payload will be queued and sent upon the next successful connection.
+   * If the message could not be queued, this method will return null.  Otherwise, it returns a
+   * generated ID for this message to be later used when handling delivery
+   * receipts (if enabled.)
+
    * @param recipient the target user's identifier
    * @param message the simple text message
    * @param options any options to specify for this message
@@ -78,11 +84,12 @@ public final class MMXMessageManager extends MMXManager {
   }
 
   /**
-   * Sends a payload using the messaging system.  If the message could
-   * not be queued, this method will return null.  Otherwise, it returns a
+   * Sends a payload using the messaging system.  If the MMXClient is not connected,
+   * the sending of this payload will be queued and sent upon the next successful connection.
+   * If the message could not be queued, this method will return null.  Otherwise, it returns a
    * generated ID for this message to be later used when handling delivery
    * receipts (if enabled.)
-   *  
+   *
    * @param recipient A recipient
    * @param payload an application payload
    * @param options the send options for this message
@@ -95,8 +102,9 @@ public final class MMXMessageManager extends MMXManager {
   }
   
   /**
-   * Sends a payload using the messaging system.  If the message could
-   * not be queued, this method will return null.  Otherwise, it returns a
+   * Sends a payload using the messaging system.  If the MMXClient is not connected,
+   * the sending of this payload will be queued and sent upon the next successful connection.
+   * If the message could not be queued, this method will return null.  Otherwise, it returns a
    * generated ID for this message to be later used when handling delivery
    * receipts (if enabled.)
    *  
@@ -174,7 +182,11 @@ public final class MMXMessageManager extends MMXManager {
 
   /**
    * Returns the status of a single message.  If the message id does not exist,
-   * the status will be {@link Constants.MessageState#UNKNOWN}.
+   * the status will be Constants.MessageState.UNKNOWN.
+   *
+   * Messages are "pending" when sendText() or sendPayload is called while the
+   * MMXClient is disconnected.  These messages will be sent upon the next successful
+   * connection.
    *
    * @param messageId The id of the message.  This is the value returned by sendMessage()
    * @return The states for all recipients of the specified message id
@@ -186,7 +198,12 @@ public final class MMXMessageManager extends MMXManager {
   /**
    * Get the states of multiple messages by their message ID's.  A message may
    * be locally queued, in-transmit, or delivered.  If the message id does not
-   * exist, the status will be {@link Constants.MessageState#UNKNOWN}.
+   * exist, the status will be Constants.MessageState.UNKNOWN.
+   *
+   * Messages are "pending" when sendText() or sendPayload is called while the
+   * MMXClient is disconnected.  These messages will be sent upon the next successful
+   * connection.
+   *
    * @param messageIds An array list of message ID's.
    * @return A Map of message ID and list of message states for all recipients
    */

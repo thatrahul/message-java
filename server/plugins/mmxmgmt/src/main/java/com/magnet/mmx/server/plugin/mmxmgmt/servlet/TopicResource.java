@@ -15,8 +15,8 @@
 package com.magnet.mmx.server.plugin.mmxmgmt.servlet;
 
 import com.google.common.base.Strings;
+import com.magnet.mmx.protocol.MMXTopicId;
 import com.magnet.mmx.protocol.TopicAction.TopicInfoWithSubscriptionCount;
-import com.magnet.mmx.server.api.v1.MMXHeaderAuth;
 import com.magnet.mmx.server.api.v1.RestUtils;
 import com.magnet.mmx.server.api.v1.protocol.TopicCreateInfo;
 import com.magnet.mmx.server.api.v1.protocol.TopicInfo;
@@ -26,11 +26,7 @@ import com.magnet.mmx.server.plugin.mmxmgmt.api.ErrorCode;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.ErrorMessages;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.ErrorResponse;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.query.TopicQuery;
-import com.magnet.mmx.server.plugin.mmxmgmt.db.ConnectionProvider;
-import com.magnet.mmx.server.plugin.mmxmgmt.db.OpenFireDBConnectionProvider;
-import com.magnet.mmx.server.plugin.mmxmgmt.db.QueryBuilderResult;
-import com.magnet.mmx.server.plugin.mmxmgmt.db.SearchResult;
-import com.magnet.mmx.server.plugin.mmxmgmt.db.TagDAO;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.*;
 import com.magnet.mmx.server.plugin.mmxmgmt.handler.MMXTopicManager;
 import com.magnet.mmx.server.plugin.mmxmgmt.message.MessageSender;
 import com.magnet.mmx.server.plugin.mmxmgmt.message.MessageSenderImpl;
@@ -51,15 +47,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -71,7 +60,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Path("topics/")
-@MMXHeaderAuth
 public class TopicResource {
   private static final Logger LOGGER = LoggerFactory.getLogger(TopicResource.class);
   private final static Integer DEFAULT_PAGE_SIZE = Integer.valueOf(100);
@@ -241,8 +229,13 @@ public class TopicResource {
       TagDAO tagDAO = DBUtil.getTagDAO();
 
       for (TopicNode node : nodes.getResults()) {
+        String userId = node.getUserId();
         String topic = node.getTopicName();
-        List<String> topicTags = tagDAO.getTagsForTopic(appId, "pubsub", TopicHelper.makeTopic(appId, null, topic));
+        // TODO: hack for MOB-2516 that topic may have the format as userID/topicName.
+        // When the console UI is fixed, don't call nametoId().
+        MMXTopicId tid = nameToId(topic);
+        List<String> topicTags = tagDAO.getTagsForTopic(appId, "pubsub",
+            TopicHelper.makeTopic(appId, tid.getUserId(), tid.getName()));
         node.setTags(topicTags);
       }
       Response response = Response
@@ -274,7 +267,8 @@ public class TopicResource {
   @Produces(MediaType.APPLICATION_JSON)
   public Response getTopic(@PathParam(TOPIC_NAME) String topicName) {
     String appId = RestUtils.getAppEntity(servletRequest).getAppId();
-    String topicId = TopicHelper.makeTopic(appId, null, topicName);
+    MMXTopicId tid = nameToId(topicName);
+    String topicId = TopicHelper.makeTopic(appId, tid.getUserId(), tid.getName());
     MMXTopicManager topicManager = MMXTopicManager.getInstance();
     Node node = topicManager.getTopicNode(topicId);
     if(node instanceof LeafNode) {
@@ -308,7 +302,8 @@ public class TopicResource {
     }
 
     String appId = appEntity.getAppId();
-    String topicId = TopicHelper.makeTopic(appId, null, topicName);
+    MMXTopicId tid = nameToId(topicName);
+    String topicId = TopicHelper.makeTopic(appId, tid.getUserId(), tid.getName());
 
     MMXTopicManager topicManager = MMXTopicManager.getInstance();
     MMXTopicManager.TopicActionResult result = topicManager.deleteTopic(appId, topicId);
@@ -391,8 +386,12 @@ public class TopicResource {
 
     for (TopicInfoWithSubscriptionCount object : objects) {
       TopicNode node = new TopicNode();
-
-      node.setTopicName(object.getName());
+      // TODO: hack to fix MOB-2516;display a user topic as userId/topicName.
+      if (object.getUserId() != null)
+        node.setTopicName(object.getUserId()+TopicHelper.TOPIC_DELIM+object.getName());
+      else
+        node.setTopicName(object.getName());
+      node.setUserId(object.getUserId());
       node.setCollection(object.isCollection());
       node.setDescription(object.getDescription());
       node.setPersistent(object.isPersistent());
@@ -414,7 +413,8 @@ public class TopicResource {
 
 
   protected List<TopicSubscription> getTopicSubscriptions (String appId, String topicName) {
-    String topicId = TopicHelper.makeTopic(appId, null, topicName);
+    MMXTopicId tid = nameToId(topicName);
+    String topicId = TopicHelper.makeTopic(appId, tid.getUserId(), tid.getName());
     MMXTopicManager topicManager = MMXTopicManager.getInstance();
     List<NodeSubscription> subscriptions = topicManager.listSubscriptionsForTopic(topicId);
     List<TopicSubscription> infoList = new ArrayList<TopicSubscription>(subscriptions.size());
@@ -423,5 +423,16 @@ public class TopicResource {
       infoList.add(info);
     }
     return infoList;
+  }
+  
+  // The hack allows the console to display user topics as userID/topicName.
+  // This method parses the global topic or user topic properly.
+  public static MMXTopicId nameToId(String topicName) {
+    int index = topicName.indexOf(TopicHelper.TOPIC_DELIM);
+    if (index < 0) {
+      return new MMXTopicId(topicName);
+    } else {
+      return new MMXTopicId(topicName.substring(0, index), topicName.substring(index+1));
+    }
   }
 }
