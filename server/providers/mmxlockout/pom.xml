@@ -6,13 +6,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.magnet.mmx</groupId>
+    <groupId>com.magnet.mmx.hack</groupId>
     <artifactId>mmx-server-providers</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <groupId>com.magnet.mmx</groupId>
   <artifactId>mmx-server-providers-lockout</artifactId>
   <packaging>jar</packaging>
 
@@ -22,7 +21,7 @@
   <dependencies>
 
     <dependency>
-      <groupId>com.magnet.mmx</groupId>
+      <groupId>com.magnet.mmx.hack</groupId>
       <artifactId>mmx-server-common</artifactId>
       <version>${project.version}</version>
     </dependency>

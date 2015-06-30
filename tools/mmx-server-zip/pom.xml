@@ -19,7 +19,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sandbox.dir>${project.build.directory}/sandbox</sandbox.dir>
-        <version.addon>1.0.2</version.addon>
+        <version.addon>1.0.3-SNAPSHOT</version.addon>
     </properties>
 
     <dependencies>
@@ -71,7 +71,7 @@
                         <configuration>
                             <artifactItems>
                                 <artifactItem>
-                                    <groupId>com.magnet.mmx</groupId>
+                                    <groupId>com.magnet.mmx.hack</groupId>
                                     <artifactId>mmxmgmt</artifactId>
                                     <version>${version.addon}</version>
                                     <type>jar</type>
@@ -93,7 +93,7 @@
                         <configuration>
                             <artifactItems>
                                 <artifactItem>
-                                    <groupId>com.magnet.mmx</groupId>
+                                    <groupId>com.magnet.mmx.hack</groupId>
                                     <artifactId>mmx-server-providers-lockout</artifactId>
                                     <version>${version.addon}</version>
                                     <type>jar</type>
