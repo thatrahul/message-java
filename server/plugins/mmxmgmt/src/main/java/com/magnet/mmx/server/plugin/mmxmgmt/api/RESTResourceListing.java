@@ -15,6 +15,7 @@
 package com.magnet.mmx.server.plugin.mmxmgmt.api;
 
 import com.magnet.mmx.server.api.v1.DevicesResource;
+import com.magnet.mmx.server.api.v1.HookResource;
 import com.magnet.mmx.server.api.v1.MMXAuthHeadersFilter;
 import com.magnet.mmx.server.api.v1.RateLimitFilter;
 import com.magnet.mmx.server.plugin.mmxmgmt.api.message.MessageResource;
@@ -54,7 +55,8 @@ public final class RESTResourceListing {
        */
       DevicesResource.class.getName(),
       TopicResource.class.getName(),
-      MMXTopicSummaryResource.class.getName()
+      MMXTopicSummaryResource.class.getName(),
+      HookResource.class.getName()
   };
 
   public static String[] getResources() {

@@ -3,14 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.magnet.mmx</groupId>
+        <groupId>com.magnet.mmx.hack</groupId>
         <artifactId>mmx-root</artifactId>
-        <version>1.0.2</version>
+        <version>1.0.3-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <groupId>com.magnet.mmx</groupId>
     <artifactId>mmx-server</artifactId>
-    <version>1.0.2</version>
     <packaging>pom</packaging>
 
     <name>mmx-server</name>
@@ -112,7 +110,7 @@
                 <inherited>true</inherited>
                 <configuration>
                     <descriptor>${basedir}/src/assembly/bin.xml</descriptor>
-                    <finalName>${artifactId}-1.0.2</finalName>
+                    <finalName>${artifactId}-${project.version}</finalName>
                 </configuration>
                 <executions>
                     <!-- step 6. zip up the server. please see bin.xml -->
