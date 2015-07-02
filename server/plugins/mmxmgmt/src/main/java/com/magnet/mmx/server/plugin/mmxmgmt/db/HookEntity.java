@@ -121,4 +121,19 @@ public class HookEntity {
     result = 31 * result + (dateUpdated != null ? dateUpdated.hashCode() : 0);
     return result;
   }
+
+  @Override
+  public String toString() {
+    final StringBuilder sb = new StringBuilder("HookEntity{");
+    sb.append("appId='").append(appId).append('\'');
+    sb.append(", id=").append(id);
+    sb.append(", hookName='").append(hookName).append('\'');
+    sb.append(", targetURL='").append(targetURL).append('\'');
+    sb.append(", eventType='").append(eventType).append('\'');
+    sb.append(", eventConfig=").append(eventConfig);
+    sb.append(", dateCreated=").append(dateCreated);
+    sb.append(", dateUpdated=").append(dateUpdated);
+    sb.append('}');
+    return sb.toString();
+  }
 }
