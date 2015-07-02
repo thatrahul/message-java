@@ -15,6 +15,7 @@
 package com.magnet.mmx.server.plugin.mmxmgmt.interceptor;
 
 import com.google.common.base.Strings;
+import com.magnet.mmx.protocol.Constants;
 import com.magnet.mmx.protocol.MMXError;
 import com.magnet.mmx.protocol.StatusCode;
 import com.magnet.mmx.server.common.data.AppEntity;
@@ -22,13 +23,27 @@ import com.magnet.mmx.server.plugin.mmxmgmt.db.AppDAO;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.DeviceDAO;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.DeviceEntity;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.DeviceNotFoundException;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.HookDAO;
+import com.magnet.mmx.server.plugin.mmxmgmt.db.HookEntity;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.MessageEntity;
 import com.magnet.mmx.server.plugin.mmxmgmt.db.PushStatus;
 import com.magnet.mmx.server.plugin.mmxmgmt.event.MMXXmppRateExceededEvent;
+import com.magnet.mmx.server.plugin.mmxmgmt.hook.HookType;
+import com.magnet.mmx.server.plugin.mmxmgmt.hook.MessageWithMetaHookContext;
+import com.magnet.mmx.server.plugin.mmxmgmt.hook.MessageWithMetaHookProcessor;
 import com.magnet.mmx.server.plugin.mmxmgmt.message.ErrorMessageBuilder;
 import com.magnet.mmx.server.plugin.mmxmgmt.monitoring.RateLimiterDescriptor;
 import com.magnet.mmx.server.plugin.mmxmgmt.monitoring.RateLimiterService;
-import com.magnet.mmx.server.plugin.mmxmgmt.util.*;
+import com.magnet.mmx.server.plugin.mmxmgmt.util.AlertEventsManager;
+import com.magnet.mmx.server.plugin.mmxmgmt.util.AlertsUtil;
+import com.magnet.mmx.server.plugin.mmxmgmt.util.DBUtil;
+import com.magnet.mmx.server.plugin.mmxmgmt.util.JIDUtil;
+import com.magnet.mmx.server.plugin.mmxmgmt.util.MMXConfigKeys;
+import com.magnet.mmx.server.plugin.mmxmgmt.util.MMXConfiguration;
+import com.magnet.mmx.server.plugin.mmxmgmt.util.MMXOfflineStorageUtil;
+import com.magnet.mmx.server.plugin.mmxmgmt.util.MMXServerConstants;
+import com.magnet.mmx.server.plugin.mmxmgmt.util.WakeupUtil;
+import org.dom4j.Element;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.interceptor.PacketRejectedException;
 import org.slf4j.Logger;
@@ -170,6 +185,22 @@ public class MMXMessageHandlingRule {
       } else {
         messageEntity.setState(MessageEntity.MessageState.DELIVERY_ATTEMPTED);
         DBUtil.getMessageDAO().persist(messageEntity);
+      }
+      LOGGER.debug("Getting hooks for appId:{}", appId);
+      //process any hooks for message with header
+      HookDAO hookDAO = DBUtil.getHookDAO();
+      List<HookEntity> hooks = hookDAO.getHooks(appId, HookType.MESSAGE_WITH_META);
+      for (HookEntity hook : hooks) {
+        LOGGER.debug("Process hook:{}", hook);
+        Message message = input.getMessage();
+        Element mmxElement = message.getChildElement(Constants.MMX, Constants.MMX_NS_MSG_PAYLOAD);
+        MessageWithMetaHookContext context = new MessageWithMetaHookContext();
+        context.setAppId(appId);
+        context.setMmxElement(mmxElement);
+        context.setFromJID(message.getFrom().toString());
+        context.setToJID(message.getTo().toString());
+        context.setMessageId(message.getID());
+        new MessageWithMetaHookProcessor().process(hook, context);
       }
     }
   }

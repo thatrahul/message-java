@@ -95,7 +95,7 @@ public class HookDAOImpl implements HookDAO {
     List<HookEntity> entityList = new ArrayList<HookEntity>();
     try {
       conn = provider.getConnection();
-      preparedStatement = conn.prepareStatement(SELECT_HOOK_USING_ID);
+      preparedStatement = conn.prepareStatement(SELECT_HOOK_USING_APP_ID_TYPE);
       preparedStatement.setString(1, appId);
       preparedStatement.setString(2, hookType.name());
       rs = preparedStatement.executeQuery();

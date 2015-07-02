@@ -50,4 +50,9 @@ public class DBUtil {
   public static TopicDAO getTopicDAO() { return new TopicDAOImpl(new OpenFireDBConnectionProvider()); }
 
   public static TopicItemDAO getTopicItemDAO() {return new TopicItemDAOImpl(new OpenFireDBConnectionProvider()); }
+
+  public static HookDAO getHookDAO() {
+    return new HookDAOImpl(new OpenFireDBConnectionProvider());
+  }
+
 }
