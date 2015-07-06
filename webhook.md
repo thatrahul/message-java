@@ -47,11 +47,11 @@ We API has been added for:
 - Creating new web hooks
 - Retrieving a web hook using its id
 
-## Create Webhook API
-Method: Post
-Endpoint: http:<server>:5220/mmxmgmt/api/v1/apps/hooks
-Required headers: X-mmx-app-id, X-mmx-api-key
-Sample request body:
+###  Create Webhook API
+* Method: Post
+* Endpoint: http:<server>:5220/mmxmgmt/api/v1/apps/hooks
+* Required headers: X-mmx-app-id, X-mmx-api-key
+* Sample request body:
 ```
 {
    "hookName" : "SupportMessage",
