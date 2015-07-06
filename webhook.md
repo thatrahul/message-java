@@ -15,7 +15,7 @@ Magnet Message has been enhanced to support webhooks for the following events:
 
 An HTTP POST request is sent to the registered target URL when these events occur.
 
-In the future we can add support for events such as:
+In future we can add support for events such as:
 - Push message acknowledged
 - MMX Message acknowledged
 - Message timed out
