@@ -24,7 +24,9 @@ In future we can add support for events such as:
 - Message timed out
 and more....
 
-## Payload Details
+## Payload details
+Details about the JSON payload that is posted to the target URL for the hook.
+ 
 * Message with specific meta key value pair
 ````
 {
@@ -64,7 +66,13 @@ We API has been added for:
 
 ## Demo
 For demonstration, we setup the hacked magnet message server. We then defined a hook for getting notified when a message with specific meta key value pair is 
-processed by the server. Blowfish server was used for providing the notification controller. In the controller we just echoed the message to a log file.
+processed by the server. Blowfish server was used for providing the controller which served as a target URL. 
+In the controller we write information about the message to a log file.
 
+Here is an example:
+```
+10:44:57.288 [qtp504829511-1075] WARN  c.m.e.c.MessageHookController - Message Info received:MessageInfo{content='I need help with stuff in Aisle 10', recipientUsernames=[rahuldemo], deviceId='3992B549-50F5-48BC-8527-A86E291B8CED', metadata={mtype=support, date=20150701}}
+
+```
 
 
