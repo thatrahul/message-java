@@ -10,8 +10,10 @@ for event notifications.
 
 Magnet Message has been enhanced to support webhooks for the following events:
 
-- Message with specific meta key value pair
-- User creation
+|| Type Identifier || Description ||
+| MESSAGE_WITH_HEADER | Message with specific meta key value pair is processed |
+| USER_CREATED        | New user is created |
+
 
 An HTTP POST request is sent to the registered target URL when these events occur.
 
