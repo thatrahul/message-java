@@ -23,8 +23,7 @@ and more....
 
 ## Payload Details
 * Message with specific meta key value pair
-        
-    {
+''''    {
         "recipientUsernames":["rahuldemo"],
         "deviceId":"3992B549-50F5-48BC-8527-A86E291B8CED",
         "content":"I need help with stuff in Aisle 10",
@@ -35,12 +34,12 @@ and more....
     }
     
 
-## Database changes:
+## Database changes
 
 - Add a new table for registering Web Hooks.
 
-REST API:
-
+## Rest API
+We API has been added for:
 - Creating new web hooks
 - Retrieving a web hook using its id
 
