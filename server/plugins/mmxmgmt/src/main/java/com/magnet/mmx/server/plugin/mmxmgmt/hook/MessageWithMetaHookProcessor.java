@@ -68,18 +68,23 @@ public class MessageWithMetaHookProcessor implements HookProcessor {
         info.setMetadata(metaDictionary);
         info.setDeviceId(context.getDeviceId());
         info.setRecipientUsernames(Collections.singletonList(JIDUtil.getUserId(context.getToJID())));
-        processHookPost(hook, context.getAppId(), info);
+        String jsonPayload = info.toJson();
+        int responseCode = processHookPost(hook, context.getAppId(), jsonPayload);
+        if (responseCode == 200) {
+          LOGGER.info("hook information posted");
+        } else {
+          LOGGER.warn("Response code:{} when posting payload:{} to {}", responseCode, payload, hook.getTargetURL());
+        }
       }
     }
   }
 
 
-  private void processHookPost(HookEntity entity, String appId, MessageInfo messageInfo) {
+  protected static int processHookPost(HookEntity entity, String appId, String payload) {
     String targetURL = entity.getTargetURL();
     LOGGER.debug("Sending POST to " + targetURL);
 
     try {
-      String payload = messageInfo.toJson();
       HttpURLConnection urlConnection = getConnection(targetURL);
       urlConnection.setDoOutput(true);
       urlConnection.setUseCaches(false);
@@ -93,14 +98,11 @@ public class MessageWithMetaHookProcessor implements HookProcessor {
       outputStreamWriter.close();
       out.close();
       int responseCode = urlConnection.getResponseCode();
-      if (responseCode == 200) {
-        LOGGER.info("hook information posted");
-      } else {
-        LOGGER.warn("Response code:{} when posting payload:{} to {}", responseCode, payload, targetURL);
-      }
       urlConnection.disconnect();
+      return responseCode;
     } catch (IOException e) {
       LOGGER.warn("IOException in posting to target URL", e);
+      return -1;
     }
   }
 

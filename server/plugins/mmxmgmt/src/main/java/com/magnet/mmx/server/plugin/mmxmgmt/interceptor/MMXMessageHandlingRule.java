@@ -188,6 +188,7 @@ public class MMXMessageHandlingRule {
       }
       LOGGER.debug("Getting hooks for appId:{}", appId);
       //process any hooks for message with header
+      //TODO: Process this on a separate thread
       HookDAO hookDAO = DBUtil.getHookDAO();
       List<HookEntity> hooks = hookDAO.getHooks(appId, HookType.MESSAGE_WITH_META);
       for (HookEntity hook : hooks) {
@@ -200,6 +201,7 @@ public class MMXMessageHandlingRule {
         context.setFromJID(message.getFrom().toString());
         context.setToJID(message.getTo().toString());
         context.setMessageId(message.getID());
+        context.setDeviceId(deviceId);
         new MessageWithMetaHookProcessor().process(hook, context);
       }
     }
