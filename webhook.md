@@ -23,7 +23,8 @@ and more....
 
 ## Payload Details
 * Message with specific meta key value pair
-''''    {
+````
+{
         "recipientUsernames":["rahuldemo"],
         "deviceId":"3992B549-50F5-48BC-8527-A86E291B8CED",
         "content":"I need help with stuff in Aisle 10",
@@ -31,8 +32,8 @@ and more....
             {   "mtype":"support",
                 "date":"20150701"
             }
-    }
-    
+}
+````    
 
 ## Database changes
 
