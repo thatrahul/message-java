@@ -12,8 +12,8 @@ Magnet Message has been enhanced to support webhooks for the following events:
 
 | Type Identifier | Description |
 | ------------- | ------------- | -----|
-| MESSAGE_WITH_HEADER | Message with specific meta key value pair is processed |
-| USER_CREATED        | New user is created |
+| _MESSAGE_WITH_HEADER_ | Message with specific meta key value pair is processed |
+| _USER_CREATED_        | New user is created |
 
 
 An HTTP POST request is sent to the registered target URL when these events occur.
@@ -45,13 +45,13 @@ Details about the JSON payload that is posted to the target URL for the hook.
 - Add a new table for registering Web Hooks.
 
 ## Rest API
-We API has been added for:
+API has been added for:
 - Creating new web hooks
 - Retrieving a web hook using its id
 
 ###  Create Webhook API
 * Method: Post
-* Endpoint: http:<server>:5220/mmxmgmt/api/v1/apps/hooks
+* Endpoint: http:\<server\>:5220/mmxmgmt/api/v1/apps/hooks
 * Required headers: X-mmx-app-id, X-mmx-api-key
 * Sample request body:
 ```
@@ -62,8 +62,6 @@ We API has been added for:
    "eventConfig" : {"mtype" : "secure" }
 }
 ```
-
-
 ## Demo
 For demonstration, we setup the hacked magnet message server. We then defined a hook for getting notified when a message with specific meta key value pair is 
 processed by the server. Blowfish server was used for providing the controller which served as a target URL. 
