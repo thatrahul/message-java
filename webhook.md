@@ -12,7 +12,7 @@ Magnet Message has been enhanced to support webhooks for the following events:
 
 | Type Identifier | Description |
 | ------------- | ------------- | -----|
-| _MESSAGE_WITH_HEADER_ | Message with specific meta key value pair is processed |
+| _MESSAGE_WITH_META_ | Message with specific meta key value pair is processed |
 | _USER_CREATED_        | New user is created |
 
 
