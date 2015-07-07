@@ -46,7 +46,7 @@ Details about the JSON payload that is posted to the target URL for the hook.
 
 ## Rest API
 API has been added for:
-- Creating new web hooks
+- Creating new webhooks
 - Retrieving a webhook using its id
 
 ###  Create Webhook API
