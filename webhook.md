@@ -42,12 +42,12 @@ Details about the JSON payload that is posted to the target URL for the hook.
 
 ## Database changes
 
-- Add a new table for registering Web Hooks.
+- Add a new table for registering Webhooks.
 
 ## Rest API
 API has been added for:
 - Creating new web hooks
-- Retrieving a web hook using its id
+- Retrieving a webhook using its id
 
 ###  Create Webhook API
 * Method: Post
