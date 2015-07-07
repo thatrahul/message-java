@@ -57,9 +57,9 @@ API has been added for:
 ```
 {
    "hookName" : "SupportMessage",
-   "targetURL" : "http://localhost:8080/someapp/messagenotification",
+   "targetURL" : "http://localhost:8443/api/webhook/message",
    "eventType" : "MESSAGE_WITH_HEADER",
-   "eventConfig" : {"mtype" : "secure" }
+   "eventConfig" : {"mtype" : "support" }
 }
 ```
 ## Demo
