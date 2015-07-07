@@ -81,7 +81,7 @@ public class MMXMessageHandlingRule {
       LOGGER.trace("handle : processing bareJID input={}", input);
       if(input.isIncoming() && !input.isReceipt()) {
         LOGGER.trace("handle : handling incoming non-receipt message with bareJID input={}", input);
-        handleBareJID(input.getMessage());
+        handleBareJID(input);
       }
       LOGGER.trace("handle : done processing bareJID, stop further processing input={}", input);
       throw new PacketRejectedException("Stopping processing for the message addressed to bareJID=" + input.getMessage().getTo());
@@ -181,29 +181,34 @@ public class MMXMessageHandlingRule {
           messageEntity.setState(MessageEntity.MessageState.PENDING);
         }
         DBUtil.getMessageDAO().persist(messageEntity);
+        processWebHooks(input, deviceId, appId);
         throw new PacketRejectedException("Device offline, stopping processing for the message addressed to fullJID=" + input.getMessage().getTo());
       } else {
         messageEntity.setState(MessageEntity.MessageState.DELIVERY_ATTEMPTED);
         DBUtil.getMessageDAO().persist(messageEntity);
+        processWebHooks(input, deviceId, appId);
       }
-      LOGGER.debug("Getting hooks for appId:{}", appId);
-      //process any hooks for message with header
-      //TODO: Process this on a separate thread
-      HookDAO hookDAO = DBUtil.getHookDAO();
-      List<HookEntity> hooks = hookDAO.getHooks(appId, HookType.MESSAGE_WITH_META);
-      for (HookEntity hook : hooks) {
-        LOGGER.debug("Process hook:{}", hook);
-        Message message = input.getMessage();
-        Element mmxElement = message.getChildElement(Constants.MMX, Constants.MMX_NS_MSG_PAYLOAD);
-        MessageWithMetaHookContext context = new MessageWithMetaHookContext();
-        context.setAppId(appId);
-        context.setMmxElement(mmxElement);
-        context.setFromJID(message.getFrom().toString());
-        context.setToJID(message.getTo().toString());
-        context.setMessageId(message.getID());
-        context.setDeviceId(deviceId);
-        new MessageWithMetaHookProcessor().process(hook, context);
-      }
+    }
+  }
+
+  private void processWebHooks(MMXMsgRuleInput input, String deviceId, String appId) {
+    LOGGER.debug("Getting hooks for appId:{}", appId);
+    //process any hooks for message with header
+    //TODO: Process this on a separate thread
+    HookDAO hookDAO = DBUtil.getHookDAO();
+    List<HookEntity> hooks = hookDAO.getHooks(appId, HookType.MESSAGE_WITH_META);
+    for (HookEntity hook : hooks) {
+      LOGGER.debug("Process hook:{}", hook);
+      Message message = input.getMessage();
+      Element mmxElement = message.getChildElement(Constants.MMX, Constants.MMX_NS_MSG_PAYLOAD);
+      MessageWithMetaHookContext context = new MessageWithMetaHookContext();
+      context.setAppId(appId);
+      context.setMmxElement(mmxElement);
+      context.setFromJID(message.getFrom().toString());
+      context.setToJID(message.getTo().toString());
+      context.setMessageId(message.getID());
+      context.setDeviceId(deviceId);
+      new MessageWithMetaHookProcessor().process(hook, context);
     }
   }
 
@@ -217,13 +222,13 @@ public class MMXMessageHandlingRule {
     return messageEntity;
   }
 
-  private void handleBareJID(Message message) {
-    if (message.getTo().getNode() == null) {
-      LOGGER.trace("handleBareJID: ignoring a multicast message={}", message);
+  private void handleBareJID(MMXMsgRuleInput input) {
+    if (input.getMessage().getTo().getNode() == null) {
+      LOGGER.trace("handleBareJID: ignoring a multicast message={}", input.getMessage());
       // It is a multicast message (XEP-0033); let MulticastRouter handle it.
       return;
     }
-
+    Message message = input.getMessage();
     LOGGER.trace("handleBareJID : message={}", message);
     MessageEntity messageEntity = MMXMessageHandlingRule.getMessageEntity(message);
     String domain = message.getTo().getDomain();
@@ -246,6 +251,7 @@ public class MMXMessageHandlingRule {
       } else {
         messageEntity.setState(MessageEntity.MessageState.PENDING);
       }
+      processWebHooks(input, pair.getJID().getResource(), messageEntity.getAppId());
       DBUtil.getMessageDAO().persist(messageEntity);
     }
 
