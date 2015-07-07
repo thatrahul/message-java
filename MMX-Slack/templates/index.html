@@ -1,0 +1,78 @@
+<html>
+   <head>
+      <title>Flask Template Example</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <script src="http://code.jquery.com/jquery-1.7.min.js"></script>
+      <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+      <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet" media="screen">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/pnotify/2.0.0/pnotify.all.js"></script>
+      <link href="https://cdnjs.cloudflare.com/ajax/libs/pnotify/2.0.0/pnotify.all.css">
+      <style type="text/css">
+         .container {
+         max-width: 500px;
+         padding-top: 100px;
+         }
+      </style>
+
+
+      <script type="text/javascript">
+           $(document).ready(function() {
+             $("#submit").click(function(evt) {
+                 evt.preventDefault()
+                 $(function(){
+                     var json = {};
+                     $('form input, form textarea').each(function(key, el){
+                        var dom = $(el);
+                        json[dom.attr('id')] = dom.val();
+                     });
+                     console.log("posting to " + json['mmx_url'])
+                        $.ajax('createHook', {
+                           data : JSON.stringify(json),
+                           contentType : 'application/json',
+                           type : 'POST'
+                        })
+                 });
+           })
+      });
+      </script>
+   </head>
+   <body>
+      <div class="container">
+         <form role="form">
+            <div class="form-group">
+               <label for="mmx_url">mmx url</label>
+               <input type="url" class="form-control" id="mmx_url">
+            </div>
+            <div class="form-group">
+               <label for="mmx_app_id">mmx appId</label>
+               <input type="appid" class="form-control" id="mmx_app_id">
+            </div>
+            <div class="form-group">
+               <label for="mmx_api_key">mmx apiKey</label>
+               <input type="appid" class="form-control" id="mmx_api_key">
+            </div>
+            <div class="form-group">
+               <label for="mmx_hdr_key">key</label>
+               <input type="key" class="form-control" id="mmx_hdr_key">
+            </div>
+            <div class="form-group">
+               <label for="mmx_hdr_value">value</label>
+               <input type="value" class="form-control" id="mmx_hdr_value">
+            </div>
+            <div class="form-group">
+               <label for="slack_msg_body">Slack message body</label>
+               <textarea class="form-control" rows="5" id="slack_msg_body"></textarea>
+            </div>
+             <div class="form-group">
+               <label for="slack_api_token">Slack API Token</label>
+               <input type="value" class="form-control" id="slack_api_token">
+            </div>
+             <div class="form-group">
+               <label for="slack_channel_name">Slack Channel Name</label>
+               <input type="value" class="form-control" id="slack_channel_name">
+            </div>
+            <button type="submit" class="btn btn-default" id="submit">Submit</button>
+         </form>
+      </div>
+   </body>
+</html>
