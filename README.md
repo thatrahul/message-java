@@ -1,6 +1,6 @@
 #Build Instructions for Magnet Messaging Server
 
-(For more information, please visit [https://www.magnet.com/developer/magnet-message/](https://www.magnet.com/developer/magnet-message/))
+(For more information about the product, please visit [https://www.magnet.com/developer/magnet-message/](https://www.magnet.com/developer/magnet-message/))
 ###Build environment:
 
 - Java 1.7.x SDK
