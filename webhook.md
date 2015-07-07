@@ -80,16 +80,16 @@ To run the demo:
 
 Pre-requisites:
 
-1) python2.7 is installed
-2) pip is installed https://pip.pypa.io/en/latest/installing.html
-3) Install the following packages using pip:
-	```
+- python2.7 is installed
+- pip is installed https://pip.pypa.io/en/latest/installing.html
+- Install the following packages using pip:
+```
 		pip install flask
 		pip install requests
-	```
-4) Slack Web API token - https://api.slack.com/web
-5) A magnet message installation, appId and apiKey
-6) Slack channel name that you want to post a message to.
+```
+- Slack Web API token - https://api.slack.com/web
+- A magnet message installation, appId and apiKey
+- Slack channel name that you want to post a message to.
 
 Run the server:
 
