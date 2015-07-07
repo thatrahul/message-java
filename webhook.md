@@ -65,7 +65,7 @@ API has been added for:
 ## Demo
 For demonstration, we setup the hacked magnet message server. We then defined a hook for getting notified when a message with specific meta key value pair is 
 processed by the server. Blowfish server was used for providing the controller which served as a target URL. 
-In the controller we write information about the message to a log file.
+In the controller we wrote information about the message to a log file.
 
 Here is an example:
 ```
