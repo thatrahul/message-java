@@ -73,4 +73,33 @@ Here is an example:
 
 ```
 
+## MMX - Slack integration demo
+
+A simple python server in MMX-Slack directory can be used to register a webhook and send a message to a slack channel
+To run the demo:
+
+Pre-requisites:
+
+1) python2.7 is installed
+2) pip is installed https://pip.pypa.io/en/latest/installing.html
+3) Install the following packages using pip:
+	```
+		pip install flask
+		pip install requests
+	```
+4) Slack Web API token - https://api.slack.com/web
+5) A magnet message installation, appId and apiKey
+6) Slack channel name that you want to post a message to.
+
+Run the server:
+
+python server.py
+
+Fill in the assicated fields and click submit.
+
+Now whenever Magnet Message app receives a message with a header specified in the key and value fields, it will invoke a webhook which in turn will send a Slack message to the configured channel
+
+
+
+
 
