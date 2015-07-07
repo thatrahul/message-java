@@ -69,6 +69,7 @@ public class MessageWithMetaHookProcessor implements HookProcessor {
         info.setDeviceId(context.getDeviceId());
         info.setRecipientUsernames(Collections.singletonList(JIDUtil.getUserId(context.getToJID())));
         String jsonPayload = info.toJson();
+        LOGGER.info("Posting json payload:" + jsonPayload);
         int responseCode = processHookPost(hook, context.getAppId(), jsonPayload);
         if (responseCode == 200) {
           LOGGER.info("hook information posted");
