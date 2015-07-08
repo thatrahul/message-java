@@ -99,8 +99,7 @@ Fill in the assicated fields and click submit.
 
 Now whenever Magnet Message app receives a message with a header specified in the key and value fields, it will invoke a webhook which in turn will send a Slack message to the configured channel
 
-
-
+---
 #Build Instructions for Magnet Messaging Server
 
 (For more information about the product, please visit [https://www.magnet.com/developer/magnet-message/](https://www.magnet.com/developer/magnet-message/))
